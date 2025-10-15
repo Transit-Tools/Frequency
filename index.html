@@ -114,6 +114,21 @@
   .gapBadge{display:inline-block;border:1px solid var(--line);border-radius:8px;padding:2px 6px}
   .gapWarn{border-color:#f59e0b;color:#f59e0b}
   .gapHigh{background:#ef44441a;border-color:#ef4444;color:#ef4444}
+
+  .serviceWindows{margin-top:16px}
+  .serviceWindows h4{margin:0 0 8px;font-size:14px}
+  .serviceWindowGrid{display:grid;gap:12px}
+  .serviceWindowGrid.dual{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+  .serviceWindowWrap{border:1px solid var(--line);border-radius:10px;padding:10px;background:rgba(15,23,42,.3)}
+  .light .serviceWindowWrap{background:rgba(148,163,184,.08)}
+  .serviceWindowWrap h5{margin:0 0 6px;font-size:13px;color:var(--chipText);text-transform:uppercase;letter-spacing:.03em}
+  .serviceWindowEmpty{color:var(--muted);font-size:12px;padding:6px 0}
+  .serviceWindowScroll{max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+  .serviceWindowTable{width:100%;border-collapse:collapse;font-size:12px}
+  .serviceWindowTable th,.serviceWindowTable td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+  .serviceWindowTable th{background:rgba(17,24,39,.9);position:sticky;top:0;z-index:1}
+  .light .serviceWindowTable th{background:#fffffff0}
+  .exceptionList{font-size:12px;color:var(--muted);line-height:1.4}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -197,6 +212,7 @@
               <th>Day</th>
               <th>≤10</th><th>11–15</th><th>16–20</th><th>21–30</th><th>31–60</th><th>&gt;60</th>
               <th>Avg</th>
+              <th>Best</th>
               <th>Least-Worst Tier</th>
             </tr>
           </thead>
@@ -352,6 +368,99 @@ function renderGapCell(gap, tier){
   return `<span class="${classes.join(' ')}">${gap}</span>`;
 }
 
+function round1(n){ return Math.round(n*10)/10; }
+function formatHeadway(value){
+  if(value==null || Number.isNaN(value)) return '—';
+  const rounded=round1(value);
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+function formatDuration(mins){
+  if(mins==null || !Number.isFinite(mins) || mins<=0) return '—';
+  const total=Math.round(mins);
+  const h=Math.floor(total/60);
+  const m=total%60;
+  const parts=[];
+  if(h>0) parts.push(`${h}h`);
+  if(m>0 || !parts.length) parts.push(`${m}m`);
+  return parts.join(' ');
+}
+function formatDelta(diff){
+  if(diff==null || !Number.isFinite(diff) || diff===0) return '±0';
+  const abs=round1(Math.abs(diff));
+  const value=Number.isInteger(abs)?String(abs):abs.toFixed(1);
+  return `${diff>0?'+':'−'}${value}`;
+}
+
+function deriveServiceWindows(times, opts={}){
+  const tolerance=Number.isFinite(opts.tolerance)?opts.tolerance:2;
+  const minPairs=Number.isFinite(opts.minPairs)?opts.minPairs:2;
+  if(!Array.isArray(times) || times.length<2) return [];
+  const sorted=[...times].sort((a,b)=>a-b);
+  let current=null;
+  const segments=[];
+
+  function finalize(){
+    if(!current) return;
+    const pairs=current.pairs;
+    if(pairs.length>=minPairs){
+      const gaps=pairs.map(p=>p.gap);
+      const median=computeMedian(gaps);
+      const avg=gaps.reduce((a,b)=>a+b,0)/gaps.length;
+      const mode=computeMode(gaps);
+      const lower=median - tolerance;
+      const upper=median + tolerance;
+      const outliers=[];
+      for(const pair of pairs){
+        const gap=pair.gap;
+        if(gap<lower || gap>upper){
+          outliers.push({start:pair.start,end:pair.end,gap,diff:gap-median});
+        }
+      }
+      segments.push({
+        start:current.start,
+        end:current.last,
+        duration:Math.max(0,current.last-current.start),
+        departures:pairs.length+1,
+        avg,
+        median,
+        mode,
+        typical:median,
+        minGap:Math.min(...gaps),
+        maxGap:Math.max(...gaps),
+        outliers
+      });
+    }
+    current=null;
+  }
+
+  for(let i=1;i<sorted.length;i++){
+    const prev=sorted[i-1];
+    const curr=sorted[i];
+    if(prev==null || curr==null) continue;
+    const gap=curr-prev;
+    if(!Number.isFinite(gap)) continue;
+    if(gap<5 || gap>240){
+      finalize();
+      continue;
+    }
+    if(!current){
+      current={start:prev,last:curr,pairs:[{start:prev,end:curr,gap}]};
+      continue;
+    }
+    const existingGaps=current.pairs.map(p=>p.gap);
+    const typical=computeMedian(existingGaps);
+    if(Math.abs(gap-typical)<=tolerance){
+      current.pairs.push({start:prev,end:curr,gap});
+      current.last=curr;
+    }else{
+      finalize();
+      current={start:prev,last:curr,pairs:[{start:prev,end:curr,gap}]};
+    }
+  }
+  finalize();
+  return segments;
+}
+
 function mergeRows(rows){
   // merge by route+day using real headways and preserving per-direction times
   const m = new Map();
@@ -370,13 +479,23 @@ function mergeRows(rows){
     v.hw.sort((a,b)=>a-b);
     const b = bucketCounts(v.hw);
     const avg = v.hw.length ? Math.round(v.hw.reduce((a,b)=>a+b,0)/v.hw.length) : 0;
+    const best = computeMedian(v.hw);
     const tier = leastWorstTier(v.hw);
-    out.push({route:v.route, dir:'–', day:v.day, b, avg, tier, hw:v.hw, times:v.times.sort((a,b)=>a-b), dirDetails:v.dirDetails});
+    const mergedTimes=v.times.sort((a,b)=>a-b);
+    const dedupTimes=[]; for(const t of mergedTimes){ if(!dedupTimes.length || dedupTimes[dedupTimes.length-1]!==t) dedupTimes.push(t); }
+    for(const dirKey of Object.keys(v.dirDetails)){
+      const dirTimes=v.dirDetails[dirKey]?.times||[];
+      dirTimes.sort((a,b)=>a-b);
+      const cleaned=[];
+      for(const t of dirTimes){ if(!cleaned.length || cleaned[cleaned.length-1]!==t) cleaned.push(t); }
+      v.dirDetails[dirKey].times=cleaned;
+    }
+    out.push({route:v.route, dir:'–', day:v.day, b, avg, best, tier, hw:v.hw, times:dedupTimes, dirDetails:v.dirDetails});
   }
   return out;
 }
 function cloneRow(r){
-  return {route:r.route, dir:r.dir, day:r.day, b:structuredClone?r.b:JSON.parse(JSON.stringify(r.b)), avg:r.avg, tier:r.tier, hw:[...r.hw], times:[...r.times], dirDetails:r.dirDetails};
+  return {route:r.route, dir:r.dir, day:r.day, b:structuredClone?r.b:JSON.parse(JSON.stringify(r.b)), avg:r.avg, best:r.best, tier:r.tier, hw:[...r.hw], times:[...r.times], dirDetails:cloneDirDetails(r.dirDetails)};
 }
 
 function updateFrequentBanner(){
@@ -600,9 +719,10 @@ async function analyze(){
 
       const b=bucketCounts(gaps);
       const avg=Math.round(gaps.reduce((a,b)=>a+b,0)/gaps.length);
+      const best=computeMedian(gaps);
       const tier=leastWorstTier(gaps);
 
-      rows.push({route:rname, dir, day, b, avg, tier, hw:gaps, times:dedup});
+      rows.push({route:rname, dir, day, b, avg, best, tier, hw:gaps, times:dedup});
 
       // keep per-direction times for modal (by route+day)
       const routeDayKey=`${rname}::${day}`;
@@ -680,7 +800,7 @@ function render(opts={}){
           <span class="dir">${directionLabel(it.dir)}</span>
         </div>
         <div class="day">${it.day}</div>
-        <div class="stat">avg ${it.avg} • ≤10:${it.b['≤10']} • 11–15:${it.b['11–15']}</div>
+        <div class="stat">best ${formatHeadway(it.best)} • avg ${it.avg} • ≤10:${it.b['≤10']} • 11–15:${it.b['11–15']}</div>
       `;
       div.addEventListener('click', ()=>{ openModal(it); });
       container.appendChild(div);
@@ -710,6 +830,7 @@ function render(opts={}){
       <td>${r.b['31–60']}</td>
       <td>${r.b['>60']}</td>
       <td>${r.avg}</td>
+      <td>${formatHeadway(r.best)}</td>
       <td><span class="tier ${tierClass(r.tier)}" title="Tier T allows up to 2 gaps in (T, T+2] and none > T+2">${r.tier==='>60' ? '&gt;60' : r.tier} min</span></td>
     `;
     tr.addEventListener('click', ()=>openModal(r));
@@ -752,6 +873,44 @@ function buildDepartureTable(label, detail){
   }
   return `<div class="gapTableWrap"><h5>${label}</h5><div class="gapTableScroll"><table class="gapTable"><thead><tr><th>#</th><th>Time</th><th>Gap</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
+function buildServiceWindowTable(label, windows){
+  if(!windows || !windows.length){
+    return `<div class="serviceWindowWrap"><h5>${label}</h5><div class="serviceWindowEmpty">Not enough departures to determine a consistent window.</div></div>`;
+  }
+  const rows=windows.map((win,idx)=>{
+    const span=`${m2t(win.start)}–${m2t(win.end)}`;
+    const coverage=formatDuration(win.duration);
+    const best=formatHeadway(win.typical);
+    const avg=formatHeadway(win.avg);
+    const mode=formatHeadway(win.mode);
+    const dep=`${win.departures}`;
+    const longest=win.maxGap!=null?`${formatHeadway(win.maxGap)} min`:'';
+    const exceptions=win.outliers.length
+      ? win.outliers.slice(0,4).map(o=>`${m2t(o.start)}–${m2t(o.end)} (${formatHeadway(o.gap)} min, ${formatDelta(o.diff)} vs best)`).join('<br>') + (win.outliers.length>4?`<br>+${win.outliers.length-4} more`:'')
+      : '—';
+    return `<tr><td>${idx+1}</td><td>${span}</td><td>${coverage}</td><td>${best}</td><td>${avg}</td><td>${mode}</td><td>${dep}</td><td>${longest||'—'}</td><td class="exceptionList">${exceptions}</td></tr>`;
+  }).join('');
+  return `<div class="serviceWindowWrap"><h5>${label}</h5><div class="serviceWindowScroll"><table class="serviceWindowTable"><thead><tr><th>#</th><th>Window</th><th>Span</th><th>Best</th><th>Avg</th><th>Mode</th><th>Dep.</th><th>Longest</th><th>Exceptions</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+}
+
+function buildServiceWindowsSection(row, dirDetails, merge){
+  const opts={tolerance:2,minPairs:2};
+  const parts=[];
+  if(merge){
+    const mergedTimes=Array.isArray(row?.times)?[...row.times].sort((a,b)=>a-b):[];
+    const uniq=[];
+    for(const t of mergedTimes){ if(!uniq.length || uniq[uniq.length-1]!==t) uniq.push(t); }
+    const mergedWindows=deriveServiceWindows(uniq, opts);
+    parts.push(buildServiceWindowTable('Merged directions', mergedWindows));
+  }
+  const outboundWindows=deriveServiceWindows(dirDetails?.['0']?.times||[], opts);
+  const inboundWindows=deriveServiceWindows(dirDetails?.['1']?.times||[], opts);
+  parts.push(buildServiceWindowTable('Outbound', outboundWindows));
+  parts.push(buildServiceWindowTable('Inbound', inboundWindows));
+  const gridClass = parts.length>1 ? 'serviceWindowGrid dual' : 'serviceWindowGrid';
+  return `<div class="serviceWindows"><h4>Service Windows</h4><div class="${gridClass}">${parts.join('')}</div></div>`;
+}
+
 function buildDeparturesSection(dirDetails, merge){
   const layoutClass=merge ? 'stack' : 'twoCols';
   const outbound=buildDepartureTable('Outbound', dirDetails?.['0']);
@@ -767,7 +926,11 @@ function openModal(r){
 
   const median = computeMedian(r.hw);
   const mode   = computeMode(r.hw);
-  const avg    = r.hw.length ? Math.round(r.hw.reduce((a,b)=>a+b,0)/r.hw.length) : r.avg;
+  const avgRaw = r.hw.length ? r.hw.reduce((a,b)=>a+b,0)/r.hw.length : r.avg;
+  const avg    = formatHeadway(avgRaw);
+  const best   = formatHeadway(r.best ?? median);
+  const medianText = formatHeadway(median);
+  const modeText   = formatHeadway(mode);
 
   const gapGroups = formatGroupedGaps(r.hw);
   const gapHtml   = gapGroups.length ? gapGroups.map(g=>`<span class="chip">${g}</span>`).join(' ') : '<span class="muted">Not enough data</span>';
@@ -777,16 +940,17 @@ function openModal(r){
 
   const mergeChecked = document.getElementById('merge').checked;
   const dirDetails   = r.dirDetails || getDirDetails(r.route, r.day);
+  const serviceWindowsSection = buildServiceWindowsSection(r, dirDetails, mergeChecked);
   const departuresSection = buildDeparturesSection(dirDetails, mergeChecked);
 
   const body = document.getElementById('modalBody');
   body.innerHTML = `
     <p><strong>Least-Worst Tier:</strong> ${r.tier==='>60'?'&gt;60':r.tier} min,
-       <strong>Median:</strong> ${Math.round(median)} min,
-       <strong>Mode:</strong> ${mode} min,
-       <span class="muted">Avg: ${avg} min</span>
+       <strong>Best headway:</strong> ${best} min,
+       <span class="muted">Median: ${medianText} • Mode: ${modeText} • Avg: ${avg}</span>
     </p>
     <p><strong>Top gaps:</strong> ${gapHtml}</p>
+    ${serviceWindowsSection}
     ${departuresSection}
     <div class="miniBuckets">
       <table class="miniBucket"><thead><tr><th>Bucket</th><th>Count</th></tr></thead><tbody>${bucketHtml}</tbody></table>
