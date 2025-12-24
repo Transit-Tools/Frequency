@@ -278,18 +278,6 @@ document.getElementById('focus15').addEventListener('click', () => {
 
 function t2m(s){const p=(s||'').split(':');if(p.length<2)return null;return (+p[0])*60+(+p[1]);}
 function m2t(m){const h=Math.floor(m/60); const mm=String(m%60).padStart(2,'0'); return `${String(h).padStart(2,'0')}:${mm}`;}
-function gtfsDateToDayLabel(dateStr){
-  if(!/^\d{8}$/.test(dateStr)) return null;
-  const year=parseInt(dateStr.slice(0,4),10);
-  const month=parseInt(dateStr.slice(4,6),10)-1;
-  const day=parseInt(dateStr.slice(6,8),10);
-  const date=new Date(Date.UTC(year,month,day));
-  if(date.getUTCFullYear()!==year || date.getUTCMonth()!==month || date.getUTCDate()!==day) return null;
-  const dow=date.getUTCDay();
-  if(dow===0) return 'Sunday';
-  if(dow===6) return 'Saturday';
-  return 'Weekday';
-}
 function parseCsv(text){
   return new Promise(res=>Papa.parse(text,{header:true,skipEmptyLines:true,complete:r=>{
     const clean=r.data.filter(row=>Object.values(row).some(v=>v&&String(v).trim()!==''));res(clean);
@@ -566,72 +554,18 @@ async function analyze(){
   }
 
   const zip=await JSZip.loadAsync(file);
-  const need=['routes.txt','trips.txt','stop_times.txt','calendar.txt','calendar_dates.txt'];
+  const need=['routes.txt','trips.txt','stop_times.txt','calendar.txt'];
   for(const n of need){ if(!zip.file(n)) { alert(n+' missing'); return; } }
 
-  const [routes,trips,stopTimes,calendar,calendarDates]=await Promise.all([
+  const [routes,trips,stopTimes,calendar]=await Promise.all([
     parseCsv(await zip.file('routes.txt').async('text')),
     parseCsv(await zip.file('trips.txt').async('text')),
     parseCsv(await zip.file('stop_times.txt').async('text')),
     parseCsv(await zip.file('calendar.txt').async('text')),
-    parseCsv(await zip.file('calendar_dates.txt').async('text')),
   ]);
 
   const routeById={}; for(const r of routes){ if(r.route_id) routeById[r.route_id]=r; }
   const calByService={}; for(const c of calendar){ if(c.service_id) calByService[c.service_id]=c; }
-
-  const calendarExceptions=new Map();
-  const serviceDayAdditions=new Map();
-  const serviceDayRemovals=new Map();
-
-  function addToDayMap(store, serviceId, dayLabel, dateStr){
-    if(!store.has(serviceId)) store.set(serviceId,new Map());
-    const dayMap=store.get(serviceId);
-    if(!dayMap.has(dayLabel)) dayMap.set(dayLabel,new Set());
-    dayMap.get(dayLabel).add(dateStr);
-  }
-
-  for(const row of calendarDates){
-    const serviceId=(row.service_id||'').trim();
-    const dateStr=(row.date||'').trim();
-    const type=(row.exception_type||'').trim();
-    if(!serviceId || !dateStr || !type) continue;
-    const dayLabel=gtfsDateToDayLabel(dateStr);
-    if(!dayLabel) continue;
-    if(!calendarExceptions.has(serviceId)) calendarExceptions.set(serviceId,new Map());
-    const perDate=calendarExceptions.get(serviceId);
-    if(!perDate.has(dateStr)) perDate.set(dateStr,{day:dayLabel});
-    const entry=perDate.get(dateStr);
-    if(type==='1'){
-      entry.add=true;
-      addToDayMap(serviceDayAdditions,serviceId,dayLabel,dateStr);
-    }else if(type==='2'){
-      entry.remove=true;
-      addToDayMap(serviceDayRemovals,serviceId,dayLabel,dateStr);
-    }
-  }
-
-  function hasAdditionForDay(serviceId, day){
-    const dayMap=serviceDayAdditions.get(serviceId); if(!dayMap) return false;
-    const dates=dayMap.get(day); if(!dates || !dates.size) return false;
-    const perDate=calendarExceptions.get(serviceId); if(!perDate) return false;
-    for(const date of dates){
-      const entry=perDate.get(date);
-      if(entry?.add) return true;
-    }
-    return false;
-  }
-
-  function hasRemovalForDay(serviceId, day){
-    const dayMap=serviceDayRemovals.get(serviceId); if(!dayMap) return false;
-    const dates=dayMap.get(day); if(!dates || !dates.size) return false;
-    const perDate=calendarExceptions.get(serviceId); if(!perDate) return false;
-    for(const date of dates){
-      const entry=perDate.get(date);
-      if(entry?.remove && !entry?.add) return true;
-    }
-    return false;
-  }
 
   // origin departure per trip
   const originForTrip=new Map();
