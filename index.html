@@ -96,7 +96,7 @@
 
   /* Modal */
   .modal{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.6); z-index:100}
-  .dialog{background:var(--panel); border:1px solid var(--line); border-radius:16px; width:min(920px,94vw); max-height:90vh; display:flex; flex-direction:column; padding:16px}
+  .dialog{background:var(--panel); border:1px solid var(--line); border-radius:16px; width:min(90vw,1400px); max-height:85vh; display:flex; flex-direction:column; padding:16px}
   .dialogHeader{flex-shrink:0; display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px}
   .dialog h3{margin:0}
   .dialog pre{display:none}
@@ -116,7 +116,7 @@
   .gapTables.stack{display:grid;grid-template-columns:1fr;gap:12px}
   .gapTableWrap h5{margin:0 0 4px;font-size:13px;color:var(--chipText)}
   .gapTableScroll{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:10px}
-  .gapTable{width:100%;border-collapse:collapse;font-size:13px}
+  .gapTable{width:100%;border-collapse:collapse;font-size:13px;font-family:ui-monospace,monospace}
   .gapTable thead th{position:sticky;top:0;background:rgba(17,24,39,.9);z-index:1}
   .light .gapTable thead th{background:#fffffff0}
   .gapTable th,.gapTable td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
@@ -134,7 +134,7 @@
   .serviceWindowWrap h5{margin:0 0 6px;font-size:13px;color:var(--chipText);text-transform:uppercase;letter-spacing:.03em}
   .serviceWindowEmpty{color:var(--muted);font-size:12px;padding:6px 0}
   .serviceWindowScroll{max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:10px}
-  .serviceWindowTable{width:100%;border-collapse:collapse;font-size:12px}
+  .serviceWindowTable{width:100%;border-collapse:collapse;font-size:12px;font-family:ui-monospace,monospace}
   .serviceWindowTable th,.serviceWindowTable td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
   .serviceWindowTable th{background:rgba(17,24,39,.9);position:sticky;top:0;z-index:1}
   .light .serviceWindowTable th{background:#fffffff0}
@@ -160,6 +160,13 @@
   .chartLegend{display:flex;gap:16px;margin-top:8px;font-size:11px;color:var(--muted)}
   .chartLegend span{display:flex;align-items:center;gap:4px}
   .chartLegend .dot{width:10px;height:10px;border-radius:50%}
+  .chartWithStats{display:flex;gap:16px;align-items:flex-start}
+  .chartWithStats .chartContainer{flex:1}
+  .chartWithStats .statsSidebar{flex:0 0 200px;display:flex;flex-direction:column;gap:12px;padding:12px;background:rgba(15,23,42,.3);border:1px solid var(--line);border-radius:10px}
+  .light .chartWithStats .statsSidebar{background:rgba(148,163,184,.08)}
+  .statsSidebar .statItem{display:flex;flex-direction:column;gap:4px}
+  .statsSidebar .statLabel{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .statsSidebar .statValue{font-size:20px;font-weight:800;color:var(--text)}
 
   /* Compact Departures */
   .compactDepartures{margin-top:12px}
@@ -182,7 +189,7 @@
   /* Gap distribution */
   .gapDistribution{margin-top:16px}
   .gapDistribution h4{margin:0 0 8px;font-size:14px}
-  .gapDistTable{width:100%;max-width:400px;border-collapse:collapse;font-size:13px;border:1px solid var(--line);border-radius:10px}
+  .gapDistTable{width:100%;max-width:400px;border-collapse:collapse;font-size:13px;border:1px solid var(--line);border-radius:10px;font-family:ui-monospace,monospace}
   .gapDistTable th,.gapDistTable td{border-bottom:1px solid var(--line);padding:8px 12px;text-align:left}
   .gapDistTable th{background:rgba(17,24,39,.9)}
   .light .gapDistTable th{background:#fffffff0}
@@ -954,7 +961,7 @@ function buildCompactDeparturesSection(dirDetails, collapsed=true){
 }
 
 // Frequency chart
-function buildFrequencyChart(row, dirDetails, serviceWindows){
+function buildFrequencyChart(row, dirDetails, serviceWindows, stats){
   const times=Array.isArray(row?.times)?[...row.times].sort((a,b)=>a-b):[];
   if(times.length<2) return '';
 
@@ -1038,28 +1045,49 @@ function buildFrequencyChart(row, dirDetails, serviceWindows){
   }
 
   const chartId='freqChart'+Math.random().toString(36).substr(2,9);
+
+  // Build stats sidebar if provided
+  const statsSidebar = stats ? `
+    <div class="statsSidebar">
+      <div class="statItem">
+        <div class="statLabel">Tier</div>
+        <div class="statValue"><span class="tier ${tierClass(stats.tier)}">${stats.tier==='>60'?'>60':stats.tier}</span></div>
+      </div>
+      <div class="statItem">
+        <div class="statLabel">Best Headway</div>
+        <div class="statValue">${stats.best} min</div>
+      </div>
+      <div class="statItem">
+        <div class="statLabel">Average</div>
+        <div class="statValue">${stats.avg} min</div>
+      </div>
+    </div>` : '';
+
   return `
     <div class="chartSection">
       <h4>Frequency Throughout Day</h4>
-      <div class="chartContainer">
-        <svg class="chartSvg" viewBox="0 0 ${width} ${height}" id="${chartId}">
-          <g class="chartBands">${standardBands}</g>
-          <g class="chartInferredBands">${inferredBands}</g>
-          <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+chartH}" class="chartAxis"/>
-          <line x1="${padL}" y1="${padT+chartH}" x2="${padL+chartW}" y2="${padT+chartH}" class="chartAxis"/>
-          ${yLabels.join('')}
-          ${xLabels.join('')}
-          <path d="${path}" class="chartLine" stroke="var(--accent)" stroke-width="2"/>
-          ${dots}
-          <text x="${8}" y="${padT+chartH/2}" class="chartAxisLabel" transform="rotate(-90,8,${padT+chartH/2})">Headway (min)</text>
-        </svg>
-        <div class="chartLegend">
-          <span><span class="dot" style="background:#10b981"></span>≤10 min</span>
-          <span><span class="dot" style="background:#22c55e"></span>≤15 min</span>
-          <span><span class="dot" style="background:#06b6d4"></span>≤20 min</span>
-          <span><span class="dot" style="background:#f59e0b"></span>≤30 min</span>
-          <span><span class="dot" style="background:#ef4444"></span>&gt;30 min</span>
+      <div class="chartWithStats">
+        <div class="chartContainer">
+          <svg class="chartSvg" viewBox="0 0 ${width} ${height}" id="${chartId}">
+            <g class="chartBands">${standardBands}</g>
+            <g class="chartInferredBands">${inferredBands}</g>
+            <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+chartH}" class="chartAxis"/>
+            <line x1="${padL}" y1="${padT+chartH}" x2="${padL+chartW}" y2="${padT+chartH}" class="chartAxis"/>
+            ${yLabels.join('')}
+            ${xLabels.join('')}
+            <path d="${path}" class="chartLine" stroke="var(--accent)" stroke-width="2"/>
+            ${dots}
+            <text x="${8}" y="${padT+chartH/2}" class="chartAxisLabel" transform="rotate(-90,8,${padT+chartH/2})">Headway (min)</text>
+          </svg>
+          <div class="chartLegend">
+            <span><span class="dot" style="background:#10b981"></span>≤10 min</span>
+            <span><span class="dot" style="background:#22c55e"></span>≤15 min</span>
+            <span><span class="dot" style="background:#06b6d4"></span>≤20 min</span>
+            <span><span class="dot" style="background:#f59e0b"></span>≤30 min</span>
+            <span><span class="dot" style="background:#ef4444"></span>&gt;30 min</span>
+          </div>
         </div>
+        ${statsSidebar}
       </div>
     </div>`;
 }
@@ -1086,27 +1114,18 @@ function buildDeparturesSection(dirDetails, merge){
 function buildGapDistribution(headways){
   if(!headways || !headways.length) return '<div class="muted">No gap data available</div>';
 
-  const buckets = {
-    '≤10 min': 0,
-    '11–15 min': 0,
-    '16–20 min': 0,
-    '21–30 min': 0,
-    '31–60 min': 0,
-    '>60 min': 0
-  };
-
+  // Count frequency of each unique gap value
+  const gapCounts = new Map();
   for(const h of headways){
-    if(h<=10) buckets['≤10 min']++;
-    else if(h<=15) buckets['11–15 min']++;
-    else if(h<=20) buckets['16–20 min']++;
-    else if(h<=30) buckets['21–30 min']++;
-    else if(h<=60) buckets['31–60 min']++;
-    else buckets['>60 min']++;
+    gapCounts.set(h, (gapCounts.get(h) || 0) + 1);
   }
 
-  const rows = Object.entries(buckets).map(([range, count]) =>
-    `<tr><td>${range}</td><td>${count}</td></tr>`
-  ).join('');
+  // Sort by gap value and format rows
+  const rows = [...gapCounts.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([gap, count]) =>
+      `<tr><td>${gap}</td><td>×${count}</td></tr>`
+    ).join('');
 
   return `
     <div class="gapDistribution">
@@ -1114,7 +1133,7 @@ function buildGapDistribution(headways){
       <table class="gapDistTable">
         <thead>
           <tr>
-            <th>Gap Range</th>
+            <th>Gap (min)</th>
             <th>Count</th>
           </tr>
         </thead>
@@ -1158,7 +1177,8 @@ function openModal(r){
     serviceWindows=labelServiceWindows(deriveServiceWindows(allTimes, opts));
   }
 
-  const chartSection = buildFrequencyChart(r, dirDetails, serviceWindows);
+  const stats = { tier: r.tier, best: best, avg: avg };
+  const chartSection = buildFrequencyChart(r, dirDetails, serviceWindows, stats);
   const serviceWindowsSection = buildServiceWindowsSection(r, dirDetails, mergeChecked);
   const departuresSection = buildDeparturesSection(dirDetails, mergeChecked);
 
@@ -1167,10 +1187,6 @@ function openModal(r){
   const body = document.getElementById('modalBody');
   body.innerHTML = `
     <div id="tabOverview" class="tabContent active">
-      <p><strong>Service Tier:</strong> ${r.tier==='>60'?'&gt;60':r.tier} min,
-         <strong>Best headway:</strong> ${best} min,
-         <strong>Average:</strong> ${avg} min
-      </p>
       ${chartSection}
     </div>
     <div id="tabService" class="tabContent">
