@@ -57,7 +57,8 @@
   #frequentBanner{display:none}
   #frequentBanner h3{margin:0 0 8px;font-size:14px}
   #bannerPills{display:flex;flex-wrap:wrap;gap:8px}
-  #bannerPills button{background:#10b981;border:0;color:#fff;font-weight:800;border-radius:999px;padding:6px 10px;cursor:pointer}
+  #bannerPills button{background:#10b981;border:0;color:#fff;font-weight:800;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:14px}
+  #bannerPills button:hover{background:#059669}
   #bannerEmpty{color:var(--muted);font-size:13px}
 
   /* Kanban */
@@ -173,6 +174,19 @@
   .hourMins span{color:var(--text)}
   .directionBlock{margin-bottom:12px}
   .directionBlock h5{margin:0 0 6px;font-size:13px;color:var(--chipText)}
+
+  /* Side-by-side layouts */
+  .sideBySide{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:768px){.sideBySide{grid-template-columns:1fr}}
+
+  /* Gap distribution */
+  .gapDistribution{margin-top:16px}
+  .gapDistribution h4{margin:0 0 8px;font-size:14px}
+  .gapDistTable{width:100%;max-width:400px;border-collapse:collapse;font-size:13px;border:1px solid var(--line);border-radius:10px}
+  .gapDistTable th,.gapDistTable td{border-bottom:1px solid var(--line);padding:8px 12px;text-align:left}
+  .gapDistTable th{background:rgba(17,24,39,.9)}
+  .light .gapDistTable th{background:#fffffff0}
+  .gapDistTable td:last-child{text-align:right}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -275,7 +289,8 @@
       </div>
       <div class="dialogTabs">
         <button class="dialogTab active" data-tab="tabOverview" onclick="switchTab('tabOverview')">Overview</button>
-        <button class="dialogTab" data-tab="tabWindows" onclick="switchTab('tabWindows')">Service Windows</button>
+        <button class="dialogTab" data-tab="tabService" onclick="switchTab('tabService')">Service</button>
+        <button class="dialogTab" data-tab="tabGaps" onclick="switchTab('tabGaps')">Gaps</button>
         <button class="dialogTab" data-tab="tabDepartures" onclick="switchTab('tabDepartures')">Departures</button>
       </div>
       <div id="modalBody" class="dialogBody"></div>
@@ -902,20 +917,11 @@ function labelServiceWindows(windows){
 
 function buildServiceWindowsSection(row, dirDetails, merge){
   const opts={tolerance:2,minPairs:2};
-  const parts=[];
-  if(merge){
-    const mergedTimes=Array.isArray(row?.times)?[...row.times].sort((a,b)=>a-b):[];
-    const uniq=[];
-    for(const t of mergedTimes){ if(!uniq.length || uniq[uniq.length-1]!==t) uniq.push(t); }
-    const mergedWindows=labelServiceWindows(deriveServiceWindows(uniq, opts));
-    parts.push(buildServiceWindowTable('Merged directions', mergedWindows));
-  }
   const outboundWindows=labelServiceWindows(deriveServiceWindows(dirDetails?.['0']?.times||[], opts));
   const inboundWindows=labelServiceWindows(deriveServiceWindows(dirDetails?.['1']?.times||[], opts));
-  parts.push(buildServiceWindowTable('Outbound', outboundWindows));
-  parts.push(buildServiceWindowTable('Inbound', inboundWindows));
-  const gridClass = parts.length>1 ? 'serviceWindowGrid dual' : 'serviceWindowGrid';
-  return `<div class="serviceWindows"><h4>Service Windows</h4><div class="${gridClass}">${parts.join('')}</div></div>`;
+  const outboundHtml = buildServiceWindowTable('Outbound', outboundWindows);
+  const inboundHtml = buildServiceWindowTable('Inbound', inboundWindows);
+  return `<div class="sideBySide">${outboundHtml}${inboundHtml}</div>`;
 }
 
 // Compact departure format: group by hour
@@ -941,7 +947,7 @@ function buildCompactDeparturesSection(dirDetails, collapsed=true){
   const outboundTimes=dirDetails?.['0']?.times||[];
   const inboundTimes=dirDetails?.['1']?.times||[];
   return `
-    <div class="compactDepartures">
+    <div class="sideBySide">
       <div class="directionBlock"><h5>Outbound</h5>${buildCompactDepartures(outboundTimes)}</div>
       <div class="directionBlock"><h5>Inbound</h5>${buildCompactDepartures(inboundTimes)}</div>
     </div>`;
@@ -1076,6 +1082,48 @@ function toggleDepartures(header){
 function buildDeparturesSection(dirDetails, merge){
   return buildCompactDeparturesSection(dirDetails, true);
 }
+
+function buildGapDistribution(headways){
+  if(!headways || !headways.length) return '<div class="muted">No gap data available</div>';
+
+  const buckets = {
+    '≤10 min': 0,
+    '11–15 min': 0,
+    '16–20 min': 0,
+    '21–30 min': 0,
+    '31–60 min': 0,
+    '>60 min': 0
+  };
+
+  for(const h of headways){
+    if(h<=10) buckets['≤10 min']++;
+    else if(h<=15) buckets['11–15 min']++;
+    else if(h<=20) buckets['16–20 min']++;
+    else if(h<=30) buckets['21–30 min']++;
+    else if(h<=60) buckets['31–60 min']++;
+    else buckets['>60 min']++;
+  }
+
+  const rows = Object.entries(buckets).map(([range, count]) =>
+    `<tr><td>${range}</td><td>${count}</td></tr>`
+  ).join('');
+
+  return `
+    <div class="gapDistribution">
+      <h4>Gap Distribution</h4>
+      <table class="gapDistTable">
+        <thead>
+          <tr>
+            <th>Gap Range</th>
+            <th>Count</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
+    </div>`;
+}
 function openModal(r){
   const modal = document.getElementById('modal');
   modal.style.display='flex';
@@ -1114,6 +1162,8 @@ function openModal(r){
   const serviceWindowsSection = buildServiceWindowsSection(r, dirDetails, mergeChecked);
   const departuresSection = buildDeparturesSection(dirDetails, mergeChecked);
 
+  const gapDistribution = buildGapDistribution(r.hw);
+
   const body = document.getElementById('modalBody');
   body.innerHTML = `
     <div id="tabOverview" class="tabContent active">
@@ -1121,11 +1171,14 @@ function openModal(r){
          <strong>Best headway:</strong> ${best} min,
          <strong>Average:</strong> ${avg} min
       </p>
-      <p><strong>Top gaps:</strong> ${gapHtml}</p>
       ${chartSection}
     </div>
-    <div id="tabWindows" class="tabContent">
+    <div id="tabService" class="tabContent">
       ${serviceWindowsSection}
+    </div>
+    <div id="tabGaps" class="tabContent">
+      <p><strong>Top gaps:</strong> ${gapHtml}</p>
+      ${gapDistribution}
     </div>
     <div id="tabDepartures" class="tabContent">
       ${departuresSection}
