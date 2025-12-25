@@ -94,10 +94,12 @@
 
   /* Modal */
   .modal{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.6); z-index:100}
-  .dialog{background:var(--panel); border:1px solid var(--line); border-radius:16px; width:min(820px,92vw); padding:16px}
-  .dialog h3{margin:0 0 8px}
+  .dialog{background:var(--panel); border:1px solid var(--line); border-radius:16px; width:min(920px,94vw); max-height:90vh; display:flex; flex-direction:column; padding:16px}
+  .dialogHeader{flex-shrink:0; display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px}
+  .dialog h3{margin:0}
   .dialog pre{display:none}
-  .close{float:right; background:transparent; border:1px solid var(--line); color:var(--chipText); border-radius:8px; padding:6px 10px; cursor:pointer}
+  .dialogBody{flex:1; overflow-y:auto; max-height:calc(80vh - 60px); padding-right:8px}
+  .close{background:transparent; border:1px solid var(--line); color:var(--chipText); border-radius:8px; padding:6px 10px; cursor:pointer}
   .miniBuckets{margin-top:12px}
   .miniBucket{width:100%; border-collapse:collapse; font-size:12px}
   .miniBucket th,.miniBucket td{border-bottom:1px solid var(--line); padding:6px 8px; text-align:left}
@@ -129,6 +131,40 @@
   .serviceWindowTable th{background:rgba(17,24,39,.9);position:sticky;top:0;z-index:1}
   .light .serviceWindowTable th{background:#fffffff0}
   .exceptionList{font-size:12px;color:var(--muted);line-height:1.4}
+
+  /* Frequency Chart */
+  .chartSection{margin:16px 0}
+  .chartSection h4{margin:0 0 8px;font-size:14px}
+  .chartContainer{border:1px solid var(--line);border-radius:10px;padding:12px;background:rgba(15,23,42,.3)}
+  .light .chartContainer{background:rgba(148,163,184,.08)}
+  .chartToggle{display:flex;gap:6px;margin-bottom:12px}
+  .chartToggle button{background:transparent;border:1px solid var(--line);color:var(--muted);padding:6px 12px;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px}
+  .chartToggle button.active{background:var(--btn);color:#fff;border-color:var(--btn)}
+  .chartSvg{width:100%;height:180px}
+  .chartAxis{stroke:var(--line);stroke-width:1}
+  .chartAxisLabel{fill:var(--muted);font-size:10px}
+  .chartLine{fill:none;stroke-width:2}
+  .chartDot{r:3}
+  .chartBand{opacity:0.15}
+  .chartBandPeak{fill:#22c55e}
+  .chartBandOffPeak{fill:#94a3b8}
+  .chartLegend{display:flex;gap:16px;margin-top:8px;font-size:11px;color:var(--muted)}
+  .chartLegend span{display:flex;align-items:center;gap:4px}
+  .chartLegend .dot{width:10px;height:10px;border-radius:50%}
+
+  /* Compact Departures */
+  .compactDepartures{margin-top:12px}
+  .compactDepartures h4{margin:0 0 8px;font-size:14px;cursor:pointer;user-select:none}
+  .compactDepartures h4:hover{color:var(--accent)}
+  .collapsibleContent{overflow:hidden;transition:max-height 0.3s ease}
+  .collapsibleContent.collapsed{max-height:0}
+  .hourRow{display:flex;align-items:baseline;margin-bottom:4px;font-family:ui-monospace,monospace;font-size:13px}
+  .hourLabel{width:28px;color:var(--muted);font-weight:700;text-align:right;margin-right:8px;flex-shrink:0}
+  .hourPipe{color:var(--line);margin-right:8px}
+  .hourMins{display:flex;flex-wrap:wrap;gap:6px}
+  .hourMins span{color:var(--text)}
+  .directionBlock{margin-bottom:12px}
+  .directionBlock h5{margin:0 0 6px;font-size:13px;color:var(--chipText)}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -225,9 +261,11 @@
   <!-- Inspect Modal -->
   <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="dialog">
-      <button class="close" onclick="closeModal()">Close</button>
-      <h3 id="modalTitle">Headway Details</h3>
-      <div id="modalBody"></div>
+      <div class="dialogHeader">
+        <h3 id="modalTitle">Headway Details</h3>
+        <button class="close" onclick="closeModal()">Close</button>
+      </div>
+      <div id="modalBody" class="dialogBody"></div>
     </div>
   </div>
 
@@ -805,19 +843,44 @@ function buildServiceWindowTable(label, windows){
     return `<div class="serviceWindowWrap"><h5>${label}</h5><div class="serviceWindowEmpty">Not enough departures to determine a consistent window.</div></div>`;
   }
   const rows=windows.map((win,idx)=>{
+    const winLabel=win.label||'';
     const span=`${m2t(win.start)}–${m2t(win.end)}`;
     const coverage=formatDuration(win.duration);
     const best=formatHeadway(win.typical);
     const avg=formatHeadway(win.avg);
-    const mode=formatHeadway(win.mode);
     const dep=`${win.departures}`;
-    const longest=win.maxGap!=null?`${formatHeadway(win.maxGap)} min`:'';
-    const exceptions=win.outliers.length
-      ? win.outliers.slice(0,4).map(o=>`${m2t(o.start)}–${m2t(o.end)} (${formatHeadway(o.gap)} min, ${formatDelta(o.diff)} vs best)`).join('<br>') + (win.outliers.length>4?`<br>+${win.outliers.length-4} more`:'')
-      : '—';
-    return `<tr><td>${idx+1}</td><td>${span}</td><td>${coverage}</td><td>${best}</td><td>${avg}</td><td>${mode}</td><td>${dep}</td><td>${longest||'—'}</td><td class="exceptionList">${exceptions}</td></tr>`;
+    return `<tr><td>${winLabel}</td><td>${span}</td><td>${coverage}</td><td>${best} min</td><td>${avg} min</td><td>${dep}</td></tr>`;
   }).join('');
-  return `<div class="serviceWindowWrap"><h5>${label}</h5><div class="serviceWindowScroll"><table class="serviceWindowTable"><thead><tr><th>#</th><th>Window</th><th>Span</th><th>Best</th><th>Avg</th><th>Mode</th><th>Dep.</th><th>Longest</th><th>Exceptions</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  return `<div class="serviceWindowWrap"><h5>${label}</h5><div class="serviceWindowScroll"><table class="serviceWindowTable"><thead><tr><th>Type</th><th>Window</th><th>Span</th><th>Headway</th><th>Avg</th><th>Trips</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+}
+
+function labelServiceWindows(windows){
+  if(!windows || windows.length===0) return [];
+  // Label windows based on headway quality:
+  // - Peak service = window(s) with shortest typical headway
+  // - Base service = typical daytime headways (middle range)
+  // - Off-peak service = longest headways
+  const sorted=[...windows].map((w,i)=>({...w,originalIdx:i})).sort((a,b)=>a.typical-b.typical);
+  const labeled=new Array(windows.length);
+
+  if(sorted.length===1){
+    labeled[sorted[0].originalIdx]={...windows[sorted[0].originalIdx], label:'Base service'};
+  } else if(sorted.length===2){
+    labeled[sorted[0].originalIdx]={...windows[sorted[0].originalIdx], label:'Peak service'};
+    labeled[sorted[1].originalIdx]={...windows[sorted[1].originalIdx], label:'Off-peak service'};
+  } else {
+    // 3+ windows: best = peak, worst = off-peak, middle = base
+    const bestTypical=sorted[0].typical;
+    const worstTypical=sorted[sorted.length-1].typical;
+    for(const w of sorted){
+      let label;
+      if(w.typical===bestTypical) label='Peak service';
+      else if(w.typical===worstTypical) label='Off-peak service';
+      else label='Base service';
+      labeled[w.originalIdx]={...windows[w.originalIdx], label};
+    }
+  }
+  return labeled;
 }
 
 function buildServiceWindowsSection(row, dirDetails, merge){
@@ -827,22 +890,193 @@ function buildServiceWindowsSection(row, dirDetails, merge){
     const mergedTimes=Array.isArray(row?.times)?[...row.times].sort((a,b)=>a-b):[];
     const uniq=[];
     for(const t of mergedTimes){ if(!uniq.length || uniq[uniq.length-1]!==t) uniq.push(t); }
-    const mergedWindows=deriveServiceWindows(uniq, opts);
+    const mergedWindows=labelServiceWindows(deriveServiceWindows(uniq, opts));
     parts.push(buildServiceWindowTable('Merged directions', mergedWindows));
   }
-  const outboundWindows=deriveServiceWindows(dirDetails?.['0']?.times||[], opts);
-  const inboundWindows=deriveServiceWindows(dirDetails?.['1']?.times||[], opts);
+  const outboundWindows=labelServiceWindows(deriveServiceWindows(dirDetails?.['0']?.times||[], opts));
+  const inboundWindows=labelServiceWindows(deriveServiceWindows(dirDetails?.['1']?.times||[], opts));
   parts.push(buildServiceWindowTable('Outbound', outboundWindows));
   parts.push(buildServiceWindowTable('Inbound', inboundWindows));
   const gridClass = parts.length>1 ? 'serviceWindowGrid dual' : 'serviceWindowGrid';
   return `<div class="serviceWindows"><h4>Service Windows</h4><div class="${gridClass}">${parts.join('')}</div></div>`;
 }
 
+// Compact departure format: group by hour
+function buildCompactDepartures(times){
+  if(!times || !times.length) return '<div class="muted">No departures</div>';
+  const sorted=[...times].sort((a,b)=>a-b);
+  const byHour=new Map();
+  for(const t of sorted){
+    const h=Math.floor(t/60);
+    if(!byHour.has(h)) byHour.set(h,[]);
+    byHour.get(h).push(String(t%60).padStart(2,'0'));
+  }
+  let html='';
+  for(const [hour,mins] of [...byHour.entries()].sort((a,b)=>a[0]-b[0])){
+    const hourDisplay=hour>12?hour-12:hour===0?12:hour;
+    const ampm=hour>=12?'p':'a';
+    html+=`<div class="hourRow"><span class="hourLabel">${hourDisplay}${ampm}</span><span class="hourPipe">|</span><div class="hourMins">${mins.map(m=>`<span>${m}</span>`).join('')}</div></div>`;
+  }
+  return html;
+}
+
+function buildCompactDeparturesSection(dirDetails, collapsed=true){
+  const outboundTimes=dirDetails?.['0']?.times||[];
+  const inboundTimes=dirDetails?.['1']?.times||[];
+  const collapseClass=collapsed?'collapsed':'';
+  const arrow=collapsed?'▶':'▼';
+  return `
+    <div class="compactDepartures">
+      <h4 onclick="toggleDepartures(this)">${arrow} Show detailed departures</h4>
+      <div class="collapsibleContent ${collapseClass}">
+        <div class="directionBlock"><h5>Outbound</h5>${buildCompactDepartures(outboundTimes)}</div>
+        <div class="directionBlock"><h5>Inbound</h5>${buildCompactDepartures(inboundTimes)}</div>
+      </div>
+    </div>`;
+}
+
+// Frequency chart
+function buildFrequencyChart(row, dirDetails, serviceWindows){
+  const times=Array.isArray(row?.times)?[...row.times].sort((a,b)=>a-b):[];
+  if(times.length<2) return '';
+
+  // Calculate gaps at each time point
+  const dataPoints=[];
+  for(let i=1;i<times.length;i++){
+    const gap=times[i]-times[i-1];
+    if(gap>=5 && gap<=120){
+      dataPoints.push({time:times[i-1],gap});
+    }
+  }
+  if(dataPoints.length<2) return '';
+
+  // Chart dimensions
+  const width=850, height=160, padL=45, padR=20, padT=20, padB=30;
+  const chartW=width-padL-padR;
+  const chartH=height-padT-padB;
+
+  // Scales
+  const t0=document.getElementById('t0')?.value||'07:00';
+  const t1=document.getElementById('t1')?.value||'22:00';
+  const minTime=t2m(t0);
+  const maxTime=t2m(t1);
+  const maxGap=Math.min(60,Math.max(...dataPoints.map(d=>d.gap))+5);
+  const scaleX=t=>(t-minTime)/(maxTime-minTime)*chartW;
+  const scaleY=g=>chartH-(g/maxGap)*chartH;
+
+  // Color by tier
+  function gapColor(gap){
+    if(gap<=10) return '#10b981';
+    if(gap<=15) return '#22c55e';
+    if(gap<=20) return '#06b6d4';
+    if(gap<=30) return '#f59e0b';
+    return '#ef4444';
+  }
+
+  // Build path
+  let path=`M ${padL+scaleX(dataPoints[0].time)} ${padT+scaleY(dataPoints[0].gap)}`;
+  for(let i=1;i<dataPoints.length;i++){
+    path+=` L ${padL+scaleX(dataPoints[i].time)} ${padT+scaleY(dataPoints[i].gap)}`;
+  }
+
+  // Dots
+  const dots=dataPoints.map(d=>{
+    const x=padL+scaleX(d.time);
+    const y=padT+scaleY(d.gap);
+    return `<circle cx="${x}" cy="${y}" r="4" fill="${gapColor(d.gap)}"/>`;
+  }).join('');
+
+  // Standard peak bands (7-9 AM, 4-6 PM)
+  const standardBands=`
+    <rect x="${padL+scaleX(7*60)}" y="${padT}" width="${scaleX(9*60)-scaleX(7*60)}" height="${chartH}" class="chartBand chartBandPeak"/>
+    <rect x="${padL+scaleX(16*60)}" y="${padT}" width="${scaleX(18*60)-scaleX(16*60)}" height="${chartH}" class="chartBand chartBandPeak"/>
+  `;
+
+  // Inferred bands from service windows
+  const inferredBands=(serviceWindows||[]).map(w=>{
+    const isPeak=w.label==='Peak service';
+    const bandClass=isPeak?'chartBandPeak':'chartBandOffPeak';
+    const x=padL+scaleX(w.start);
+    const ww=scaleX(w.end)-scaleX(w.start);
+    return `<rect x="${x}" y="${padT}" width="${ww}" height="${chartH}" class="chartBand ${bandClass}"/>`;
+  }).join('');
+
+  // X-axis labels (hours)
+  const xLabels=[];
+  for(let h=Math.ceil(minTime/60);h<=Math.floor(maxTime/60);h++){
+    const x=padL+scaleX(h*60);
+    const label=h>12?`${h-12}p`:h===12?'12p':h===0?'12a':`${h}a`;
+    xLabels.push(`<text x="${x}" y="${height-8}" class="chartAxisLabel" text-anchor="middle">${label}</text>`);
+  }
+
+  // Y-axis labels
+  const yLabels=[];
+  const yTicks=[0,10,20,30,maxGap>40?40:null,maxGap>50?60:null].filter(v=>v!==null&&v<=maxGap);
+  for(const g of yTicks){
+    const y=padT+scaleY(g);
+    yLabels.push(`<text x="${padL-8}" y="${y+4}" class="chartAxisLabel" text-anchor="end">${g}</text>`);
+    yLabels.push(`<line x1="${padL}" y1="${y}" x2="${padL+chartW}" y2="${y}" stroke="var(--line)" stroke-dasharray="2,2"/>`);
+  }
+
+  const chartId='freqChart'+Math.random().toString(36).substr(2,9);
+  return `
+    <div class="chartSection">
+      <h4>Frequency Throughout Day</h4>
+      <div class="chartContainer">
+        <div class="chartToggle">
+          <button class="active" onclick="toggleChartMode('${chartId}','standard')">Standard Peak (7-9a, 4-6p)</button>
+          <button onclick="toggleChartMode('${chartId}','inferred')">Inferred Peak</button>
+        </div>
+        <svg class="chartSvg" viewBox="0 0 ${width} ${height}" id="${chartId}">
+          <g class="chartBands standard">${standardBands}</g>
+          <g class="chartBands inferred" style="display:none">${inferredBands}</g>
+          <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+chartH}" class="chartAxis"/>
+          <line x1="${padL}" y1="${padT+chartH}" x2="${padL+chartW}" y2="${padT+chartH}" class="chartAxis"/>
+          ${yLabels.join('')}
+          ${xLabels.join('')}
+          <path d="${path}" class="chartLine" stroke="var(--accent)" stroke-width="2"/>
+          ${dots}
+          <text x="${8}" y="${padT+chartH/2}" class="chartAxisLabel" transform="rotate(-90,8,${padT+chartH/2})">Headway (min)</text>
+        </svg>
+        <div class="chartLegend">
+          <span><span class="dot" style="background:#10b981"></span>≤10 min</span>
+          <span><span class="dot" style="background:#22c55e"></span>≤15 min</span>
+          <span><span class="dot" style="background:#06b6d4"></span>≤20 min</span>
+          <span><span class="dot" style="background:#f59e0b"></span>≤30 min</span>
+          <span><span class="dot" style="background:#ef4444"></span>&gt;30 min</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function toggleChartMode(chartId, mode){
+  const svg=document.getElementById(chartId);
+  if(!svg) return;
+  const container=svg.closest('.chartContainer');
+  const buttons=container.querySelectorAll('.chartToggle button');
+  buttons.forEach(b=>b.classList.remove('active'));
+  const standardBands=svg.querySelector('.chartBands.standard');
+  const inferredBands=svg.querySelector('.chartBands.inferred');
+  if(mode==='standard'){
+    buttons[0].classList.add('active');
+    if(standardBands) standardBands.style.display='';
+    if(inferredBands) inferredBands.style.display='none';
+  }else{
+    buttons[1].classList.add('active');
+    if(standardBands) standardBands.style.display='none';
+    if(inferredBands) inferredBands.style.display='';
+  }
+}
+
+function toggleDepartures(header){
+  const content=header.nextElementSibling;
+  const isCollapsed=content.classList.contains('collapsed');
+  content.classList.toggle('collapsed');
+  header.textContent=(isCollapsed?'▼':'▶')+' Show detailed departures';
+}
+
 function buildDeparturesSection(dirDetails, merge){
-  const layoutClass=merge ? 'stack' : 'twoCols';
-  const outbound=buildDepartureTable('Outbound', dirDetails?.['0']);
-  const inbound=buildDepartureTable('Inbound',  dirDetails?.['1']);
-  return `<div class="departuresSection"><h4>Departures &amp; Gaps</h4><div class="gapTables ${layoutClass}">${outbound}${inbound}</div></div>`;
+  return buildCompactDeparturesSection(dirDetails, true);
 }
 function openModal(r){
   const modal = document.getElementById('modal');
@@ -862,11 +1096,23 @@ function openModal(r){
   const gapGroups = formatGroupedGaps(r.hw);
   const gapHtml   = gapGroups.length ? gapGroups.map(g=>`<span class="chip">${g}</span>`).join(' ') : '<span class="muted">Not enough data</span>';
 
-  const bucketOrder=['≤10','11–15','16–20','21–30','31–60','>60'];
-  const bucketHtml = bucketOrder.map(label=>`<tr><td>${label}</td><td>${r.b[label]}</td></tr>`).join('');
-
   const mergeChecked = document.getElementById('merge').checked;
   const dirDetails   = r.dirDetails || getDirDetails(r.route, r.day);
+
+  // Get service windows for chart
+  const opts={tolerance:2,minPairs:2};
+  let serviceWindows=[];
+  if(mergeChecked){
+    const mergedTimes=Array.isArray(r?.times)?[...r.times].sort((a,b)=>a-b):[];
+    const uniq=[];
+    for(const t of mergedTimes){ if(!uniq.length || uniq[uniq.length-1]!==t) uniq.push(t); }
+    serviceWindows=labelServiceWindows(deriveServiceWindows(uniq, opts));
+  }else{
+    const allTimes=[...(dirDetails?.['0']?.times||[]),...(dirDetails?.['1']?.times||[])].sort((a,b)=>a-b);
+    serviceWindows=labelServiceWindows(deriveServiceWindows(allTimes, opts));
+  }
+
+  const chartSection = buildFrequencyChart(r, dirDetails, serviceWindows);
   const serviceWindowsSection = buildServiceWindowsSection(r, dirDetails, mergeChecked);
   const departuresSection = buildDeparturesSection(dirDetails, mergeChecked);
 
@@ -877,11 +1123,9 @@ function openModal(r){
        <span class="muted">Median: ${medianText} • Mode: ${modeText} • Avg: ${avg}</span>
     </p>
     <p><strong>Top gaps:</strong> ${gapHtml}</p>
+    ${chartSection}
     ${serviceWindowsSection}
     ${departuresSection}
-    <div class="miniBuckets">
-      <table class="miniBucket"><thead><tr><th>Bucket</th><th>Count</th></tr></thead><tbody>${bucketHtml}</tbody></table>
-    </div>
   `;
 }
 function closeModal(){ document.getElementById('modal').style.display='none'; }
