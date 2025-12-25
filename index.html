@@ -69,6 +69,7 @@
   .card{background:transparent; border:1px solid var(--line); border-radius:10px; padding:8px 10px; cursor:pointer}
   .card:hover{border-color:#334155}
   .routeLine{display:flex; align-items:center; gap:6px; font-weight:800}
+  .routeIcon{width:18px;height:18px;flex-shrink:0;opacity:0.6}
   .day{font-size:11px; color:#94a3b8}
   .dir{font-size:11px; background:transparent; border:1px solid var(--line); color:var(--chipText); padding:2px 6px; border-radius:999px}
   .stat{font-size:11px; color:#a5b4fc}
@@ -98,7 +99,13 @@
   .dialogHeader{flex-shrink:0; display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px}
   .dialog h3{margin:0}
   .dialog pre{display:none}
+  .dialogTabs{display:flex;gap:6px;margin-top:12px;border-bottom:1px solid var(--line);padding-bottom:0}
+  .dialogTab{background:transparent;border:0;border-bottom:2px solid transparent;color:var(--muted);padding:8px 16px;cursor:pointer;font-weight:600;font-size:13px;transition:all .2s}
+  .dialogTab.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .dialogTab:hover{color:var(--text)}
   .dialogBody{flex:1; overflow-y:auto; max-height:calc(80vh - 60px); padding-right:8px}
+  .tabContent{display:none}
+  .tabContent.active{display:block}
   .close{background:transparent; border:1px solid var(--line); color:var(--chipText); border-radius:8px; padding:6px 10px; cursor:pointer}
   .miniBuckets{margin-top:12px}
   .miniBucket{width:100%; border-collapse:collapse; font-size:12px}
@@ -137,9 +144,6 @@
   .chartSection h4{margin:0 0 8px;font-size:14px}
   .chartContainer{border:1px solid var(--line);border-radius:10px;padding:12px;background:rgba(15,23,42,.3)}
   .light .chartContainer{background:rgba(148,163,184,.08)}
-  .chartToggle{display:flex;gap:6px;margin-bottom:12px}
-  .chartToggle button{background:transparent;border:1px solid var(--line);color:var(--muted);padding:6px 12px;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px}
-  .chartToggle button.active{background:var(--btn);color:#fff;border-color:var(--btn)}
   .chartSvg{width:100%;height:180px}
   .chartAxis{stroke:var(--line);stroke-width:1}
   .chartAxisLabel{fill:var(--muted);font-size:10px}
@@ -148,6 +152,10 @@
   .chartBand{opacity:0.15}
   .chartBandPeak{fill:#22c55e}
   .chartBandOffPeak{fill:#94a3b8}
+  .chartBandInferred{fill:none;stroke-width:3;opacity:0.6}
+  .chartBandInferredPeak{stroke:#22c55e}
+  .chartBandInferredBase{stroke:#06b6d4}
+  .chartBandInferredOff{stroke:#94a3b8}
   .chartLegend{display:flex;gap:16px;margin-top:8px;font-size:11px;color:var(--muted)}
   .chartLegend span{display:flex;align-items:center;gap:4px}
   .chartLegend .dot{width:10px;height:10px;border-radius:50%}
@@ -209,7 +217,7 @@
         </div>
         <button id="focus15" class="btn" type="button">Weekday: 15-min or better</button>
         <div class="switch">
-          <input id="merge" type="checkbox">
+          <input id="merge" type="checkbox" checked>
           <label for="merge">Merge directions per route</label>
         </div>
         <div class="search" style="flex:1">
@@ -249,7 +257,7 @@
               <th>≤10</th><th>11–15</th><th>16–20</th><th>21–30</th><th>31–60</th><th>&gt;60</th>
               <th>Avg</th>
               <th>Best</th>
-              <th>Least-Worst Tier</th>
+              <th>Service Tier</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -264,6 +272,11 @@
       <div class="dialogHeader">
         <h3 id="modalTitle">Headway Details</h3>
         <button class="close" onclick="closeModal()">Close</button>
+      </div>
+      <div class="dialogTabs">
+        <button class="dialogTab active" data-tab="tabOverview" onclick="switchTab('tabOverview')">Overview</button>
+        <button class="dialogTab" data-tab="tabWindows" onclick="switchTab('tabWindows')">Service Windows</button>
+        <button class="dialogTab" data-tab="tabDepartures" onclick="switchTab('tabDepartures')">Departures</button>
       </div>
       <div id="modalBody" class="dialogBody"></div>
     </div>
@@ -761,6 +774,10 @@ function render(opts={}){
       div.dataset.route=it.route; div.dataset.day=it.day; div.dataset.dir=it.dir;
       div.innerHTML = `
         <div class="routeLine">
+          <svg class="routeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="6" width="18" height="13" rx="2"/>
+            <path d="M3 10h18M7 6V4M17 6V4M7 15h0M17 15h0M7 19v2M17 19v2"/>
+          </svg>
           <span>${it.route}</span>
           <span class="dir">${directionLabel(it.dir)}</span>
         </div>
@@ -923,15 +940,10 @@ function buildCompactDepartures(times){
 function buildCompactDeparturesSection(dirDetails, collapsed=true){
   const outboundTimes=dirDetails?.['0']?.times||[];
   const inboundTimes=dirDetails?.['1']?.times||[];
-  const collapseClass=collapsed?'collapsed':'';
-  const arrow=collapsed?'▶':'▼';
   return `
     <div class="compactDepartures">
-      <h4 onclick="toggleDepartures(this)">${arrow} Show detailed departures</h4>
-      <div class="collapsibleContent ${collapseClass}">
-        <div class="directionBlock"><h5>Outbound</h5>${buildCompactDepartures(outboundTimes)}</div>
-        <div class="directionBlock"><h5>Inbound</h5>${buildCompactDepartures(inboundTimes)}</div>
-      </div>
+      <div class="directionBlock"><h5>Outbound</h5>${buildCompactDepartures(outboundTimes)}</div>
+      <div class="directionBlock"><h5>Inbound</h5>${buildCompactDepartures(inboundTimes)}</div>
     </div>`;
 }
 
@@ -992,13 +1004,14 @@ function buildFrequencyChart(row, dirDetails, serviceWindows){
     <rect x="${padL+scaleX(16*60)}" y="${padT}" width="${scaleX(18*60)-scaleX(16*60)}" height="${chartH}" class="chartBand chartBandPeak"/>
   `;
 
-  // Inferred bands from service windows
+  // Inferred bands from service windows (as borders)
   const inferredBands=(serviceWindows||[]).map(w=>{
-    const isPeak=w.label==='Peak service';
-    const bandClass=isPeak?'chartBandPeak':'chartBandOffPeak';
+    let strokeClass='chartBandInferredOff';
+    if(w.label==='Peak service') strokeClass='chartBandInferredPeak';
+    else if(w.label==='Base service') strokeClass='chartBandInferredBase';
     const x=padL+scaleX(w.start);
     const ww=scaleX(w.end)-scaleX(w.start);
-    return `<rect x="${x}" y="${padT}" width="${ww}" height="${chartH}" class="chartBand ${bandClass}"/>`;
+    return `<rect x="${x}" y="${padT}" width="${ww}" height="${chartH}" class="chartBandInferred ${strokeClass}"/>`;
   }).join('');
 
   // X-axis labels (hours)
@@ -1023,13 +1036,9 @@ function buildFrequencyChart(row, dirDetails, serviceWindows){
     <div class="chartSection">
       <h4>Frequency Throughout Day</h4>
       <div class="chartContainer">
-        <div class="chartToggle">
-          <button class="active" onclick="toggleChartMode('${chartId}','standard')">Standard Peak (7-9a, 4-6p)</button>
-          <button onclick="toggleChartMode('${chartId}','inferred')">Inferred Peak</button>
-        </div>
         <svg class="chartSvg" viewBox="0 0 ${width} ${height}" id="${chartId}">
-          <g class="chartBands standard">${standardBands}</g>
-          <g class="chartBands inferred" style="display:none">${inferredBands}</g>
+          <g class="chartBands">${standardBands}</g>
+          <g class="chartInferredBands">${inferredBands}</g>
           <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+chartH}" class="chartAxis"/>
           <line x1="${padL}" y1="${padT+chartH}" x2="${padL+chartW}" y2="${padT+chartH}" class="chartAxis"/>
           ${yLabels.join('')}
@@ -1049,23 +1058,12 @@ function buildFrequencyChart(row, dirDetails, serviceWindows){
     </div>`;
 }
 
-function toggleChartMode(chartId, mode){
-  const svg=document.getElementById(chartId);
-  if(!svg) return;
-  const container=svg.closest('.chartContainer');
-  const buttons=container.querySelectorAll('.chartToggle button');
-  buttons.forEach(b=>b.classList.remove('active'));
-  const standardBands=svg.querySelector('.chartBands.standard');
-  const inferredBands=svg.querySelector('.chartBands.inferred');
-  if(mode==='standard'){
-    buttons[0].classList.add('active');
-    if(standardBands) standardBands.style.display='';
-    if(inferredBands) inferredBands.style.display='none';
-  }else{
-    buttons[1].classList.add('active');
-    if(standardBands) standardBands.style.display='none';
-    if(inferredBands) inferredBands.style.display='';
-  }
+function switchTab(tabId){
+  const modal=document.getElementById('modal');
+  modal.querySelectorAll('.dialogTab').forEach(t=>t.classList.remove('active'));
+  modal.querySelectorAll('.tabContent').forEach(c=>c.classList.remove('active'));
+  modal.querySelector(`[data-tab="${tabId}"]`)?.classList.add('active');
+  modal.querySelector(`#${tabId}`)?.classList.add('active');
 }
 
 function toggleDepartures(header){
@@ -1083,7 +1081,7 @@ function openModal(r){
   modal.style.display='flex';
   const dirLabel = directionLabel(r.dir);
   const dirText  = dirLabel && dirLabel!=='–' ? `, ${dirLabel}` : '';
-  document.getElementById('modalTitle').textContent = `Details — Route ${r.route} (${r.day}${dirText})`;
+  document.getElementById('modalTitle').textContent = `Route ${r.route} (${r.day}${dirText})`;
 
   const median = computeMedian(r.hw);
   const mode   = computeMode(r.hw);
@@ -1118,14 +1116,20 @@ function openModal(r){
 
   const body = document.getElementById('modalBody');
   body.innerHTML = `
-    <p><strong>Least-Worst Tier:</strong> ${r.tier==='>60'?'&gt;60':r.tier} min,
-       <strong>Best headway:</strong> ${best} min,
-       <span class="muted">Median: ${medianText} • Mode: ${modeText} • Avg: ${avg}</span>
-    </p>
-    <p><strong>Top gaps:</strong> ${gapHtml}</p>
-    ${chartSection}
-    ${serviceWindowsSection}
-    ${departuresSection}
+    <div id="tabOverview" class="tabContent active">
+      <p><strong>Service Tier:</strong> ${r.tier==='>60'?'&gt;60':r.tier} min,
+         <strong>Best headway:</strong> ${best} min,
+         <strong>Average:</strong> ${avg} min
+      </p>
+      <p><strong>Top gaps:</strong> ${gapHtml}</p>
+      ${chartSection}
+    </div>
+    <div id="tabWindows" class="tabContent">
+      ${serviceWindowsSection}
+    </div>
+    <div id="tabDepartures" class="tabContent">
+      ${departuresSection}
+    </div>
   `;
 }
 function closeModal(){ document.getElementById('modal').style.display='none'; }
