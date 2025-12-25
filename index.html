@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GTFS — Least Worst Frequency</title>
+<title>🚌 GTFS Frequency Screener</title>
 <style>
   :root{
     --bg:#0b1220; --panel:#111827; --muted:#9ca3af; --text:#e5e7eb; --line:#1f2937;
@@ -174,11 +174,10 @@
   .compactDepartures h4:hover{color:var(--accent)}
   .collapsibleContent{overflow:hidden;transition:max-height 0.3s ease}
   .collapsibleContent.collapsed{max-height:0}
-  .hourRow{display:flex;align-items:baseline;margin-bottom:4px;font-family:ui-monospace,monospace;font-size:13px}
-  .hourLabel{width:28px;color:var(--muted);font-weight:700;text-align:right;margin-right:8px;flex-shrink:0}
-  .hourPipe{color:var(--line);margin-right:8px}
-  .hourMins{display:flex;flex-wrap:wrap;gap:6px}
-  .hourMins span{color:var(--text)}
+  .hourRow{display:flex;align-items:baseline;margin-bottom:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:13px}
+  .hourLabel{width:24px;color:var(--muted);font-weight:700;text-align:right;margin-right:4px;flex-shrink:0}
+  .hourPipe{color:var(--line);margin-right:8px;font-weight:400}
+  .hourMins{color:var(--text);letter-spacing:.5px}
   .directionBlock{margin-bottom:12px}
   .directionBlock h5{margin:0 0 6px;font-size:13px;color:var(--chipText)}
 
@@ -194,6 +193,78 @@
   .gapDistTable th{background:rgba(17,24,39,.9)}
   .light .gapDistTable th{background:#fffffff0}
   .gapDistTable td:last-child{text-align:right}
+
+  /* New upload row layout */
+  .uploadRow{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .fileBtn{display:flex;align-items:center;gap:8px}
+  .fileBtn label{cursor:pointer}
+  .btnDemo{background:#374151;color:#e5e7eb}
+  .btnDemo:hover{background:#4b5563}
+  .btnAnalyze{background:#10b981}
+  .btnAnalyze:hover{background:#059669}
+  .btnAnalyze:disabled{background:#374151;opacity:.5}
+  .timeRange{display:flex;align-items:center;gap:8px;color:var(--muted);font-weight:600}
+  .timeRange input[type="time"]{width:100px;padding:8px 10px}
+  .daySelector{display:flex;align-items:center;gap:8px}
+  .daySelector label{font-size:12px;color:var(--muted);font-weight:700}
+  .daySelector select{background:var(--panel);border:1px solid var(--line);color:var(--text);padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600}
+
+  /* Tier summary boxes */
+  .tierBoxes{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+  .tierBox{border:2px solid;border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:all .2s;background:transparent}
+  .tierBox:hover{transform:translateY(-2px)}
+  .tierBox.active{box-shadow:0 0 0 3px var(--accent)}
+  .tierName{font-size:12px;font-weight:800;letter-spacing:.05em;margin-bottom:4px}
+  .tierCount{font-size:28px;font-weight:900}
+  .tier10{border-color:#10b981;color:#10b981}
+  .tier15{border-color:#22c55e;color:#22c55e}
+  .tier20{border-color:#06b6d4;color:#06b6d4}
+  .tier30{border-color:#f59e0b;color:#f59e0b}
+  .tier60{border-color:#ef4444;color:#ef4444}
+  .tierBig{border-color:#6b7280;color:#6b7280}
+
+  /* Route table new styles */
+  .tableHeader{display:flex;justify-content:flex-end;margin-bottom:8px}
+  .routeCount{font-size:13px;color:var(--muted)}
+  .routeTable{width:100%}
+  .routeTable th.dayCol{width:25%}
+  .routeTable td.dayCell{font-family:ui-monospace,monospace}
+  .dayCell .headway{font-weight:700;margin-right:8px}
+  .dayCell .tierBadge{font-size:11px;padding:4px 8px;border-radius:6px;font-weight:700}
+  .dayCell .noService{color:var(--muted);font-style:italic}
+
+  /* Modal improvements */
+  .modalRouteHeader{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+  .modalRouteBadge{background:var(--accent);color:#fff;font-size:18px;font-weight:900;padding:8px 14px;border-radius:8px}
+  .modalRouteName{font-size:20px;font-weight:800}
+  .modalTimeRange{font-size:13px;color:var(--muted)}
+  .modalDayTabs{display:flex;gap:6px;margin-top:12px}
+  .modalDayTab{background:transparent;border:1px solid var(--line);color:var(--muted);padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;transition:all .2s}
+  .modalDayTab.active{background:var(--btn);color:#fff;border-color:var(--btn)}
+  .modalDayTab:hover{border-color:var(--accent)}
+
+  /* Modal stats cards */
+  .statsCards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+  .statCard{background:rgba(15,23,42,.4);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .light .statCard{background:rgba(148,163,184,.08)}
+  .statCard .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+  .statCard .value{font-size:24px;font-weight:800}
+  .statCard .subvalue{font-size:13px;color:var(--muted);margin-top:4px}
+
+  /* Chart with two lines */
+  .chartLegendDir{display:flex;gap:24px;margin-top:8px;font-size:12px;font-weight:600}
+  .chartLegendDir span{display:flex;align-items:center;gap:6px}
+  .chartLegendDir .dot{width:12px;height:12px;border-radius:50%}
+
+  @media (max-width:900px){
+    .tierBoxes{grid-template-columns:repeat(3,1fr)}
+    .statsCards{grid-template-columns:1fr}
+  }
+  @media (max-width:600px){
+    .tierBoxes{grid-template-columns:repeat(2,1fr)}
+    .uploadRow{flex-direction:column;align-items:stretch}
+    .uploadRow>*{width:100%}
+  }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -201,84 +272,93 @@
 <body>
   <div class="wrap">
     <header>
-      <h1>GTFS — Least Worst Frequency</h1>
-      <div>
-        <button id="theme" class="btn" type="button" title="Toggle theme">Theme</button>
-        <span class="badge">Strict +2 min grace · max 2 events</span>
+      <h1>🚌 GTFS Frequency Screener</h1>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="badge">⚙️ Strict +5 min grace · max 2 events</span>
+        <button id="theme" class="btn" type="button" title="Toggle theme">🌙</button>
       </div>
     </header>
 
     <section id="controlsPanel" class="panel">
-      <div class="grid">
-        <div class="field">
-          <label>GTFS ZIP</label>
-          <input id="gtfs" type="file" accept=".zip">
-          <div id="fname" class="fileName"></div>
+      <div class="uploadRow">
+        <div class="fileBtn">
+          <label for="gtfs" class="btn">📁 Select GTFS Zip...</label>
+          <input id="gtfs" type="file" accept=".zip" style="display:none">
+          <span id="fname" class="fileName"></span>
         </div>
-        <div class="field">
-          <label>Start</label>
+        <button id="demo" class="btn btnDemo" type="button">DEMO</button>
+        <div class="timeRange">
+          <span>TIME</span>
           <input id="t0" type="time" value="07:00">
-        </div>
-        <div class="field">
-          <label>End</label>
+          <span>—</span>
           <input id="t1" type="time" value="22:00">
         </div>
-        <div class="field action">
-          <label>&nbsp;</label>
-          <button id="go" class="btn" type="button" disabled>Analyze</button>
-        </div>
+        <button id="go" class="btn btnAnalyze" type="button" disabled>📊 ANALYZE</button>
       </div>
       <div id="rangeMessage" class="rangeMessage" role="status" aria-live="polite"></div>
       <div class="toolbar">
-        <div class="seg" role="tablist" aria-label="Day filter">
-          <button data-day="Weekday" class="active" type="button">Weekday</button>
-          <button data-day="Saturday" type="button">Saturday</button>
-          <button data-day="Sunday" type="button">Sunday</button>
-          <button data-day="All" type="button">All</button>
+        <div class="daySelector">
+          <label>SORTING BY:</label>
+          <select id="daySort">
+            <option value="Weekday" selected>Weekday</option>
+            <option value="Saturday">Saturday</option>
+            <option value="Sunday">Sunday</option>
+          </select>
         </div>
-        <button id="focus15" class="btn" type="button">Weekday: 15-min or better</button>
         <div class="switch">
           <input id="merge" type="checkbox" checked>
-          <label for="merge">Merge directions per route</label>
+          <label for="merge">Merge directions</label>
         </div>
-        <div class="search" style="flex:1">
+        <div class="search">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-opacity=".5" stroke-width="2" d="m21 21-4.35-4.35M10 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z"/></svg>
-          <input id="q" placeholder="Search routes…">
+          <input id="q" placeholder="Filter by route name...">
         </div>
       </div>
     </section>
 
-    <section id="frequentBanner" class="panel">
-      <h3 id="bannerTitle">Weekday ≤15 min (07:00–22:00)</h3>
-      <div id="bannerPills"></div>
-      <div id="bannerEmpty" style="display:none">No ≤15 min routes found.</div>
-    </section>
-
-    <!-- Kanban Summary -->
-    <section id="kanbanWrap" class="panel" style="display:none">
-      <div class="kanban">
-        <div class="col" data-tier="10"><h3>≤10 min</h3><div class="hint">Frequent+</div><div class="cards"></div></div>
-        <div class="col" data-tier="15"><h3>≤15 min</h3><div class="hint">Frequent</div><div class="cards"></div></div>
-        <div class="col" data-tier="20"><h3>≤20 min</h3><div class="hint">Good</div><div class="cards"></div></div>
-        <div class="col" data-tier="30"><h3>≤30 min</h3><div class="hint">Basic</div><div class="cards"></div></div>
-        <div class="col" data-tier="60"><h3>≤60 min</h3><div class="hint">Infrequent</div><div class="cards"></div></div>
-        <div class="col" data-tier=">60"><h3>&gt;60 min</h3><div class="hint">Sparse</div><div class="cards"></div></div>
+    <!-- Tier Summary Boxes -->
+    <section id="tierSummary" class="panel" style="display:none">
+      <div class="tierBoxes">
+        <button class="tierBox tier10" data-tier="10" type="button">
+          <div class="tierName">FREQ+</div>
+          <div class="tierCount">0</div>
+        </button>
+        <button class="tierBox tier15" data-tier="15" type="button">
+          <div class="tierName">FREQ</div>
+          <div class="tierCount">0</div>
+        </button>
+        <button class="tierBox tier20" data-tier="20" type="button">
+          <div class="tierName">GOOD</div>
+          <div class="tierCount">0</div>
+        </button>
+        <button class="tierBox tier30" data-tier="30" type="button">
+          <div class="tierName">BASIC</div>
+          <div class="tierCount">0</div>
+        </button>
+        <button class="tierBox tier60" data-tier="60" type="button">
+          <div class="tierName">INFREQ</div>
+          <div class="tierCount">0</div>
+        </button>
+        <button class="tierBox tierBig" data-tier=">60" type="button">
+          <div class="tierName">SPARSE</div>
+          <div class="tierCount">0</div>
+        </button>
       </div>
     </section>
 
-    <!-- Details Table -->
+    <!-- Route List Table -->
     <section id="tableWrap" class="panel" style="display:none">
+      <div class="tableHeader">
+        <span class="routeCount">Displaying 0 routes</span>
+      </div>
       <div id="resultsScroll" class="resultsScroll">
-        <table id="tbl">
+        <table id="tbl" class="routeTable">
           <thead>
             <tr>
-              <th class="route">Route</th>
-              <th>Dir</th>
-              <th>Day</th>
-              <th>≤10</th><th>11–15</th><th>16–20</th><th>21–30</th><th>31–60</th><th>&gt;60</th>
-              <th>Avg</th>
-              <th>Best</th>
-              <th>Service Tier</th>
+              <th class="route">ROUTE</th>
+              <th class="dayCol">WEEKDAY</th>
+              <th class="dayCol">SATURDAY</th>
+              <th class="dayCol">SUNDAY</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -291,14 +371,8 @@
   <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="dialog">
       <div class="dialogHeader">
-        <h3 id="modalTitle">Headway Details</h3>
-        <button class="close" onclick="closeModal()">Close</button>
-      </div>
-      <div class="dialogTabs">
-        <button class="dialogTab active" data-tab="tabOverview" onclick="switchTab('tabOverview')">Overview</button>
-        <button class="dialogTab" data-tab="tabService" onclick="switchTab('tabService')">Service</button>
-        <button class="dialogTab" data-tab="tabGaps" onclick="switchTab('tabGaps')">Gaps</button>
-        <button class="dialogTab" data-tab="tabDepartures" onclick="switchTab('tabDepartures')">Departures</button>
+        <div id="modalTitle"></div>
+        <button class="close" onclick="closeModal()">✕</button>
       </div>
       <div id="modalBody" class="dialogBody"></div>
     </div>
@@ -306,11 +380,27 @@
 
 <script>
 let RAW_ROWS = []; // {route, dir, day, b, avg, tier, hw:[], times:[], dirDetails:{'0':{times:[],tier},'1':{...}} }
+let ROUTE_DATA = {}; // {routeName: {Weekday: rowData, Saturday: rowData, Sunday: rowData}}
+let activeTierFilter = null;
+
 const fileEl = document.getElementById('gtfs');
 const btn = document.getElementById('go');
 const fname = document.getElementById('fname');
-fileEl.addEventListener('change', ()=>{ btn.disabled = !(fileEl.files && fileEl.files.length>0); fname.textContent = fileEl.files?.[0]?.name || ''; });
+
+// File selection via label click
+fileEl.addEventListener('change', ()=>{
+  btn.disabled = !(fileEl.files && fileEl.files.length>0);
+  fname.textContent = fileEl.files?.[0]?.name || '';
+});
 btn.addEventListener('click', analyze);
+
+// Demo button
+document.getElementById('demo').addEventListener('click', loadDemo);
+
+async function loadDemo(){
+  // For demo, we'll show an alert - implement with actual demo data if available
+  alert('Demo mode: Upload a GTFS ZIP file to analyze transit frequency.');
+}
 
 function setupResultsSizing(){
   updateResultsMaxHeight();
@@ -331,22 +421,36 @@ document.getElementById('theme').addEventListener('click', toggleTheme);
 })();
 function toggleTheme(){
   document.body.classList.toggle('light');
+  const themeBtn = document.getElementById('theme');
+  themeBtn.textContent = document.body.classList.contains('light') ? '☀️' : '🌙';
   localStorage.setItem('theme', document.body.classList.contains('light')?'light':'dark');
 }
 
-document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{
-  document.querySelectorAll('.seg button').forEach(x=>x.classList.remove('active'));
-  b.classList.add('active');
-  render();
-}));
+// Day sort dropdown
+document.getElementById('daySort').addEventListener('change', render);
+
+// Merge checkbox
 document.getElementById('merge').addEventListener('change', render);
+
+// Search input
 document.getElementById('q').addEventListener('input', render);
-document.getElementById('focus15').addEventListener('click', () => {
-  document.querySelectorAll('.seg button').forEach(x=>x.classList.remove('active'));
-  document.querySelector('.seg button[data-day="Weekday"]').classList.add('active');
-  document.getElementById('merge').checked = true;
-  document.getElementById('q').value = '';
-  render({focus15:true});
+
+// Tier box click handlers
+document.querySelectorAll('.tierBox').forEach(box => {
+  box.addEventListener('click', () => {
+    const tier = box.dataset.tier;
+    if(activeTierFilter === tier){
+      // Deselect
+      activeTierFilter = null;
+      box.classList.remove('active');
+    } else {
+      // Select this tier
+      document.querySelectorAll('.tierBox').forEach(b => b.classList.remove('active'));
+      activeTierFilter = tier;
+      box.classList.add('active');
+    }
+    render();
+  });
 });
 
 function t2m(s){const p=(s||'').split(':');if(p.length<2)return null;return (+p[0])*60+(+p[1]);}
@@ -368,10 +472,10 @@ function bucketCounts(headways){
   }
   return b;
 }
-// STRICT grace: at most 2 gaps where T < h ≤ T+2; any h > T+2 fails immediately.
+// STRICT grace: at most 2 gaps where T < h ≤ T+5; any h > T+5 fails immediately.
 function leastWorstTier(headways){
   const tiers=[10,15,20,30,60,Infinity];
-  const GRACE=2, MAX_GRACE_COUNT=2;
+  const GRACE=5, MAX_GRACE_COUNT=2;
   for(const T of tiers){
     if(T===Infinity) return '>60';
     let graceCount=0;
@@ -420,7 +524,7 @@ function formatGroupedGaps(hw){
 function tierThreshold(tier){ const n=parseInt(tier,10); return Number.isFinite(n)?n:Infinity; }
 function gapHighlightClass(gap, tier){
   const T=tierThreshold(tier); if(!Number.isFinite(T)) return '';
-  if(gap>T+2) return 'gapHigh'; if(gap>T) return 'gapWarn'; return '';
+  if(gap>T+5) return 'gapHigh'; if(gap>T) return 'gapWarn'; return '';
 }
 function renderGapCell(gap, tier){
   if(gap==null) return '—';
@@ -559,55 +663,6 @@ function cloneRow(r){
   return {route:r.route, dir:r.dir, day:r.day, b:structuredClone?r.b:JSON.parse(JSON.stringify(r.b)), avg:r.avg, best:r.best, tier:r.tier, hw:[...r.hw], times:[...r.times], dirDetails:cloneDirDetails(r.dirDetails)};
 }
 
-function updateFrequentBanner(){
-  const banner=document.getElementById('frequentBanner');
-  const pills=document.getElementById('bannerPills');
-  const empty=document.getElementById('bannerEmpty');
-  if(!RAW_ROWS.length){ banner.style.display='none'; return; }
-  const start=document.getElementById('t0').value||'07:00';
-  const end=document.getElementById('t1').value||'22:00';
-  document.getElementById('bannerTitle').textContent=`Weekday ≤15 min (${start}–${end})`;
-
-  const weekdayRows = RAW_ROWS.filter(r=>r.day==='Weekday');
-  const merged = mergeRows(weekdayRows);
-  const frequent = merged.filter(r=>r.tier==='10' || r.tier==='15');
-
-  pills.innerHTML='';
-  if(!frequent.length){
-    empty.style.display='block';
-  }else{
-    empty.style.display='none';
-    frequent.sort((a,b)=>(''+a.route).localeCompare(''+b.route,undefined,{numeric:true}));
-    for(const r of frequent){
-      const pill=document.createElement('button');
-      pill.type='button';
-      pill.textContent=r.route;
-      pill.addEventListener('click',()=>scrollToRoute(r.route));
-      pills.appendChild(pill);
-    }
-  }
-  banner.style.display='block';
-}
-
-function scrollToRoute(route){
-  const weekdayButton=document.querySelector('.seg button[data-day="Weekday"]');
-  if(weekdayButton && !weekdayButton.classList.contains('active')){
-    document.querySelectorAll('.seg button').forEach(x=>x.classList.remove('active'));
-    weekdayButton.classList.add('active');
-  }
-  const searchInput=document.getElementById('q'); if(searchInput.value) searchInput.value='';
-  render();
-  requestAnimationFrame(()=>{
-    const rows=[...document.querySelectorAll('#tbl tbody tr')].filter(tr=>tr.dataset.route===route && tr.dataset.day==='Weekday');
-    if(rows.length){
-      const target=rows[0];
-      target.classList.remove('highlight'); void target.offsetWidth;
-      target.classList.add('highlight');
-      target.scrollIntoView({behavior:'smooth',block:'center'});
-    }
-  });
-}
-
 // Analyze
 async function analyze(){
   const file=fileEl.files[0]; if(!file) return;
@@ -740,11 +795,10 @@ async function analyze(){
 
   RAW_ROWS = rows;
   render();
-  document.getElementById('kanbanWrap').style.display='block';
+  document.getElementById('tierSummary').style.display='block';
   const tableWrapEl = document.getElementById('tableWrap');
   tableWrapEl.style.display='block';
   updateResultsMaxHeight();
-  updateFrequentBanner();
 }
 
 function cloneDirDetails(details){
@@ -768,80 +822,116 @@ function tierClass(t){
 }
 
 function render(opts={}){
-  const activeDay = document.querySelector('.seg button.active')?.dataset.day || 'Weekday';
+  const sortDay = document.getElementById('daySort').value || 'Weekday';
   const merge = document.getElementById('merge').checked;
   const q = (document.getElementById('q').value||'').toLowerCase();
-  const focus15 = opts.focus15 === true;
 
-  let rows = RAW_ROWS.filter(r => (activeDay==='All' ? true : r.day===activeDay));
-  if(q) rows = rows.filter(r => (''+r.route).toLowerCase().includes(q));
-  if(focus15) rows = rows.filter(r => r.day==='Weekday');
+  // Build ROUTE_DATA: group by route, then by day
+  ROUTE_DATA = {};
+  const processedRows = merge ? mergeRows(RAW_ROWS) : RAW_ROWS.map(cloneRow);
 
-  let displayRows = merge ? mergeRows(rows) : rows.map(cloneRow);
-  if(focus15){
-    displayRows = displayRows.filter(r => r.tier==='10' || r.tier==='15');
+  for(const r of processedRows){
+    if(!ROUTE_DATA[r.route]) ROUTE_DATA[r.route] = {};
+    ROUTE_DATA[r.route][r.day] = r;
   }
 
-  // Populate KANBAN
-  document.querySelectorAll('.col .cards').forEach(c=>c.innerHTML='');
-  const buckets = {'10':[], '15':[], '20':[], '30':[], '60':[], '>60':[]};
-  for(const r of displayRows) buckets[r.tier]?.push(r);
-  for(const key of Object.keys(buckets)){
-    const container = document.querySelector(`.col[data-tier="${key}"] .cards`);
-    const items = buckets[key] || [];
-    items.sort((a,b)=>(''+a.route).localeCompare(''+b.route,undefined,{numeric:true}));
-    for(const it of items){
-      const div = document.createElement('div');
-      div.className='card';
-      div.dataset.route=it.route; div.dataset.day=it.day; div.dataset.dir=it.dir;
-      div.innerHTML = `
-        <div class="routeLine">
-          <svg class="routeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="6" width="18" height="13" rx="2"/>
-            <path d="M3 10h18M7 6V4M17 6V4M7 15h0M17 15h0M7 19v2M17 19v2"/>
-          </svg>
-          <span>${it.route}</span>
-          <span class="dir">${directionLabel(it.dir)}</span>
-        </div>
-        <div class="day">${it.day}</div>
-        <div class="stat">best ${formatHeadway(it.best)} • avg ${it.avg} • ≤10:${it.b['≤10']} • 11–15:${it.b['11–15']}</div>
-      `;
-      div.addEventListener('click', ()=>{ openModal(it); });
-      container.appendChild(div);
+  // Get unique routes and filter by search
+  let routes = Object.keys(ROUTE_DATA);
+  if(q) routes = routes.filter(r => r.toLowerCase().includes(q));
+
+  // Count tiers based on sortDay
+  const tierCounts = {'10':0, '15':0, '20':0, '30':0, '60':0, '>60':0};
+  for(const route of routes){
+    const dayData = ROUTE_DATA[route][sortDay];
+    if(dayData){
+      tierCounts[dayData.tier] = (tierCounts[dayData.tier] || 0) + 1;
     }
   }
 
-  // Details table
-  const tbody=document.querySelector('#tbl tbody');
-  tbody.innerHTML='';
-  displayRows.sort((a,b)=>{
-    if(a.route!==b.route) return (''+a.route).localeCompare(''+b.route,undefined,{numeric:true});
-    const order={'Weekday':0,'Saturday':1,'Sunday':2};
-    if(a.day!==b.day) return (order[a.day]??9)-(order[b.day]??9);
-    return (''+a.dir).localeCompare(''+b.dir);
+  // Update tier summary boxes
+  document.querySelectorAll('.tierBox').forEach(box => {
+    const tier = box.dataset.tier;
+    box.querySelector('.tierCount').textContent = tierCounts[tier] || 0;
   });
-  for(const r of displayRows){
-    const tr=document.createElement('tr');
-    tr.dataset.route=r.route; tr.dataset.day=r.day;
-    tr.innerHTML = `
-      <td class="route">${r.route}</td>
-      <td>${directionLabel(r.dir)}</td>
-      <td>${r.day}</td>
-      <td>${r.b['≤10']}</td>
-      <td>${r.b['11–15']}</td>
-      <td>${r.b['16–20']}</td>
-      <td>${r.b['21–30']}</td>
-      <td>${r.b['31–60']}</td>
-      <td>${r.b['>60']}</td>
-      <td>${r.avg}</td>
-      <td>${formatHeadway(r.best)}</td>
-      <td><span class="tier ${tierClass(r.tier)}" title="Tier T allows up to 2 gaps in (T, T+2] and none > T+2">${r.tier==='>60' ? '&gt;60' : r.tier} min</span></td>
-    `;
-    tr.addEventListener('click', ()=>openModal(r));
+
+  // Filter by tier if active
+  if(activeTierFilter){
+    routes = routes.filter(route => {
+      const dayData = ROUTE_DATA[route][sortDay];
+      return dayData && dayData.tier === activeTierFilter;
+    });
+  }
+
+  // Sort routes by tier quality for sortDay, then alphabetically
+  const tierOrder = {'10':0, '15':1, '20':2, '30':3, '60':4, '>60':5};
+  routes.sort((a, b) => {
+    const tierA = ROUTE_DATA[a][sortDay]?.tier || '>60';
+    const tierB = ROUTE_DATA[b][sortDay]?.tier || '>60';
+    if(tierOrder[tierA] !== tierOrder[tierB]){
+      return tierOrder[tierA] - tierOrder[tierB];
+    }
+    return a.localeCompare(b, undefined, {numeric: true});
+  });
+
+  // Update route count
+  document.querySelector('.routeCount').textContent = `Displaying ${routes.length} routes`;
+
+  // Build table with 3-day columns
+  const tbody = document.querySelector('#tbl tbody');
+  tbody.innerHTML = '';
+
+  for(const route of routes){
+    const tr = document.createElement('tr');
+    tr.dataset.route = route;
+
+    // Route name cell
+    const routeCell = document.createElement('td');
+    routeCell.className = 'route';
+    routeCell.textContent = route;
+    tr.appendChild(routeCell);
+
+    // Day cells
+    for(const day of ['Weekday', 'Saturday', 'Sunday']){
+      const cell = document.createElement('td');
+      cell.className = 'dayCell';
+      const dayData = ROUTE_DATA[route][day];
+
+      if(dayData){
+        const headway = dayData.avg || 0;
+        const tier = dayData.tier;
+        const tierLabel = tierToLabel(tier);
+        cell.innerHTML = `<span class="headway">${headway}m</span><span class="tierBadge ${tierClass(tier)}">${tierLabel}</span>`;
+        cell.style.cursor = 'pointer';
+        cell.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openModal(dayData, day);
+        });
+      } else {
+        cell.innerHTML = '<span class="noService">—</span>';
+      }
+      tr.appendChild(cell);
+    }
+
+    // Click on route name opens modal for sortDay
+    routeCell.style.cursor = 'pointer';
+    routeCell.addEventListener('click', () => {
+      const dayData = ROUTE_DATA[route][sortDay];
+      if(dayData) openModal(dayData, sortDay);
+    });
+
     tbody.appendChild(tr);
   }
 
   updateResultsMaxHeight();
+}
+
+function tierToLabel(tier){
+  if(tier === '10') return 'Freq+';
+  if(tier === '15') return 'Freq';
+  if(tier === '20') return 'Good';
+  if(tier === '30') return 'Basic';
+  if(tier === '60') return 'Infreq';
+  return 'Sparse';
 }
 
 // Modal (Departures & Gaps)
@@ -931,7 +1021,7 @@ function buildServiceWindowsSection(row, dirDetails, merge){
   return `<div class="sideBySide">${outboundHtml}${inboundHtml}</div>`;
 }
 
-// Compact departure format: group by hour
+// Compact departure format: group by hour with HH | MM format
 function buildCompactDepartures(times){
   if(!times || !times.length) return '<div class="muted">No departures</div>';
   const sorted=[...times].sort((a,b)=>a-b);
@@ -943,9 +1033,8 @@ function buildCompactDepartures(times){
   }
   let html='';
   for(const [hour,mins] of [...byHour.entries()].sort((a,b)=>a[0]-b[0])){
-    const hourDisplay=hour>12?hour-12:hour===0?12:hour;
-    const ampm=hour>=12?'p':'a';
-    html+=`<div class="hourRow"><span class="hourLabel">${hourDisplay}${ampm}</span><span class="hourPipe">|</span><div class="hourMins">${mins.map(m=>`<span>${m}</span>`).join('')}</div></div>`;
+    const hourDisplay=String(hour).padStart(2,'0');
+    html+=`<div class="hourRow"><span class="hourLabel">${hourDisplay}</span><span class="hourPipe">|</span><div class="hourMins">${mins.join('  ')}</div></div>`;
   }
   return html;
 }
@@ -960,156 +1049,7 @@ function buildCompactDeparturesSection(dirDetails, collapsed=true){
     </div>`;
 }
 
-// Frequency chart
-function buildFrequencyChart(row, dirDetails, serviceWindows, stats){
-  const times=Array.isArray(row?.times)?[...row.times].sort((a,b)=>a-b):[];
-  if(times.length<2) return '';
 
-  // Calculate gaps at each time point
-  const dataPoints=[];
-  for(let i=1;i<times.length;i++){
-    const gap=times[i]-times[i-1];
-    if(gap>=5 && gap<=120){
-      dataPoints.push({time:times[i-1],gap});
-    }
-  }
-  if(dataPoints.length<2) return '';
-
-  // Chart dimensions
-  const width=850, height=160, padL=45, padR=20, padT=20, padB=30;
-  const chartW=width-padL-padR;
-  const chartH=height-padT-padB;
-
-  // Scales
-  const t0=document.getElementById('t0')?.value||'07:00';
-  const t1=document.getElementById('t1')?.value||'22:00';
-  const minTime=t2m(t0);
-  const maxTime=t2m(t1);
-  const maxGap=Math.min(60,Math.max(...dataPoints.map(d=>d.gap))+5);
-  const scaleX=t=>(t-minTime)/(maxTime-minTime)*chartW;
-  const scaleY=g=>chartH-(g/maxGap)*chartH;
-
-  // Color by tier
-  function gapColor(gap){
-    if(gap<=10) return '#10b981';
-    if(gap<=15) return '#22c55e';
-    if(gap<=20) return '#06b6d4';
-    if(gap<=30) return '#f59e0b';
-    return '#ef4444';
-  }
-
-  // Build path
-  let path=`M ${padL+scaleX(dataPoints[0].time)} ${padT+scaleY(dataPoints[0].gap)}`;
-  for(let i=1;i<dataPoints.length;i++){
-    path+=` L ${padL+scaleX(dataPoints[i].time)} ${padT+scaleY(dataPoints[i].gap)}`;
-  }
-
-  // Dots
-  const dots=dataPoints.map(d=>{
-    const x=padL+scaleX(d.time);
-    const y=padT+scaleY(d.gap);
-    return `<circle cx="${x}" cy="${y}" r="4" fill="${gapColor(d.gap)}"/>`;
-  }).join('');
-
-  // Standard peak bands (7-9 AM, 4-6 PM)
-  const standardBands=`
-    <rect x="${padL+scaleX(7*60)}" y="${padT}" width="${scaleX(9*60)-scaleX(7*60)}" height="${chartH}" class="chartBand chartBandPeak"/>
-    <rect x="${padL+scaleX(16*60)}" y="${padT}" width="${scaleX(18*60)-scaleX(16*60)}" height="${chartH}" class="chartBand chartBandPeak"/>
-  `;
-
-  // Inferred bands from service windows (as borders)
-  const inferredBands=(serviceWindows||[]).map(w=>{
-    let strokeClass='chartBandInferredOff';
-    if(w.label==='Peak service') strokeClass='chartBandInferredPeak';
-    else if(w.label==='Base service') strokeClass='chartBandInferredBase';
-    const x=padL+scaleX(w.start);
-    const ww=scaleX(w.end)-scaleX(w.start);
-    return `<rect x="${x}" y="${padT}" width="${ww}" height="${chartH}" class="chartBandInferred ${strokeClass}"/>`;
-  }).join('');
-
-  // X-axis labels (hours)
-  const xLabels=[];
-  for(let h=Math.ceil(minTime/60);h<=Math.floor(maxTime/60);h++){
-    const x=padL+scaleX(h*60);
-    const label=h>12?`${h-12}p`:h===12?'12p':h===0?'12a':`${h}a`;
-    xLabels.push(`<text x="${x}" y="${height-8}" class="chartAxisLabel" text-anchor="middle">${label}</text>`);
-  }
-
-  // Y-axis labels
-  const yLabels=[];
-  const yTicks=[0,10,20,30,maxGap>40?40:null,maxGap>50?60:null].filter(v=>v!==null&&v<=maxGap);
-  for(const g of yTicks){
-    const y=padT+scaleY(g);
-    yLabels.push(`<text x="${padL-8}" y="${y+4}" class="chartAxisLabel" text-anchor="end">${g}</text>`);
-    yLabels.push(`<line x1="${padL}" y1="${y}" x2="${padL+chartW}" y2="${y}" stroke="var(--line)" stroke-dasharray="2,2"/>`);
-  }
-
-  const chartId='freqChart'+Math.random().toString(36).substr(2,9);
-
-  // Build stats sidebar if provided
-  const statsSidebar = stats ? `
-    <div class="statsSidebar">
-      <div class="statItem">
-        <div class="statLabel">Tier</div>
-        <div class="statValue"><span class="tier ${tierClass(stats.tier)}">${stats.tier==='>60'?'>60':stats.tier}</span></div>
-      </div>
-      <div class="statItem">
-        <div class="statLabel">Best Headway</div>
-        <div class="statValue">${stats.best} min</div>
-      </div>
-      <div class="statItem">
-        <div class="statLabel">Average</div>
-        <div class="statValue">${stats.avg} min</div>
-      </div>
-    </div>` : '';
-
-  return `
-    <div class="chartSection">
-      <h4>Frequency Throughout Day</h4>
-      <div class="chartWithStats">
-        <div class="chartContainer">
-          <svg class="chartSvg" viewBox="0 0 ${width} ${height}" id="${chartId}">
-            <g class="chartBands">${standardBands}</g>
-            <g class="chartInferredBands">${inferredBands}</g>
-            <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+chartH}" class="chartAxis"/>
-            <line x1="${padL}" y1="${padT+chartH}" x2="${padL+chartW}" y2="${padT+chartH}" class="chartAxis"/>
-            ${yLabels.join('')}
-            ${xLabels.join('')}
-            <path d="${path}" class="chartLine" stroke="var(--accent)" stroke-width="2"/>
-            ${dots}
-            <text x="${8}" y="${padT+chartH/2}" class="chartAxisLabel" transform="rotate(-90,8,${padT+chartH/2})">Headway (min)</text>
-          </svg>
-          <div class="chartLegend">
-            <span><span class="dot" style="background:#10b981"></span>≤10 min</span>
-            <span><span class="dot" style="background:#22c55e"></span>≤15 min</span>
-            <span><span class="dot" style="background:#06b6d4"></span>≤20 min</span>
-            <span><span class="dot" style="background:#f59e0b"></span>≤30 min</span>
-            <span><span class="dot" style="background:#ef4444"></span>&gt;30 min</span>
-          </div>
-        </div>
-        ${statsSidebar}
-      </div>
-    </div>`;
-}
-
-function switchTab(tabId){
-  const modal=document.getElementById('modal');
-  modal.querySelectorAll('.dialogTab').forEach(t=>t.classList.remove('active'));
-  modal.querySelectorAll('.tabContent').forEach(c=>c.classList.remove('active'));
-  modal.querySelector(`[data-tab="${tabId}"]`)?.classList.add('active');
-  modal.querySelector(`#${tabId}`)?.classList.add('active');
-}
-
-function toggleDepartures(header){
-  const content=header.nextElementSibling;
-  const isCollapsed=content.classList.contains('collapsed');
-  content.classList.toggle('collapsed');
-  header.textContent=(isCollapsed?'▼':'▶')+' Show detailed departures';
-}
-
-function buildDeparturesSection(dirDetails, merge){
-  return buildCompactDeparturesSection(dirDetails, true);
-}
 
 function buildGapDistribution(headways){
   if(!headways || !headways.length) return '<div class="muted">No gap data available</div>';
@@ -1143,61 +1083,230 @@ function buildGapDistribution(headways){
       </table>
     </div>`;
 }
-function openModal(r){
+let currentModalRoute = null;
+let currentModalDay = 'Weekday';
+
+function openModal(r, day){
+  currentModalRoute = r.route;
+  currentModalDay = day || r.day;
+
   const modal = document.getElementById('modal');
   modal.style.display='flex';
-  const dirLabel = directionLabel(r.dir);
-  const dirText  = dirLabel && dirLabel!=='–' ? `, ${dirLabel}` : '';
-  document.getElementById('modalTitle').textContent = `Route ${r.route} (${r.day}${dirText})`;
 
-  const median = computeMedian(r.hw);
-  const mode   = computeMode(r.hw);
-  const avgRaw = r.hw.length ? r.hw.reduce((a,b)=>a+b,0)/r.hw.length : r.avg;
-  const avg    = formatHeadway(avgRaw);
-  const best   = formatHeadway(r.best ?? median);
-  const medianText = formatHeadway(median);
-  const modeText   = formatHeadway(mode);
+  renderModalContent();
+}
 
-  const gapGroups = formatGroupedGaps(r.hw);
-  const gapHtml   = gapGroups.length ? gapGroups.map(g=>`<span class="chip">${g}</span>`).join(' ') : '<span class="muted">Not enough data</span>';
+function renderModalContent(){
+  const route = currentModalRoute;
+  const day = currentModalDay;
 
-  const mergeChecked = document.getElementById('merge').checked;
-  const dirDetails   = r.dirDetails || getDirDetails(r.route, r.day);
-
-  // Get service windows for chart
-  const opts={tolerance:2,minPairs:2};
-  let serviceWindows=[];
-  if(mergeChecked){
-    const mergedTimes=Array.isArray(r?.times)?[...r.times].sort((a,b)=>a-b):[];
-    const uniq=[];
-    for(const t of mergedTimes){ if(!uniq.length || uniq[uniq.length-1]!==t) uniq.push(t); }
-    serviceWindows=labelServiceWindows(deriveServiceWindows(uniq, opts));
-  }else{
-    const allTimes=[...(dirDetails?.['0']?.times||[]),...(dirDetails?.['1']?.times||[])].sort((a,b)=>a-b);
-    serviceWindows=labelServiceWindows(deriveServiceWindows(allTimes, opts));
+  // Get data for this route and day
+  const r = ROUTE_DATA[route]?.[day];
+  if(!r){
+    document.getElementById('modalBody').innerHTML = '<p class="muted">No data available for this day.</p>';
+    return;
   }
 
-  const stats = { tier: r.tier, best: best, avg: avg };
-  const chartSection = buildFrequencyChart(r, dirDetails, serviceWindows, stats);
-  const serviceWindowsSection = buildServiceWindowsSection(r, dirDetails, mergeChecked);
-  const departuresSection = buildDeparturesSection(dirDetails, mergeChecked);
+  const t0 = document.getElementById('t0').value || '07:00';
+  const t1 = document.getElementById('t1').value || '22:00';
 
-  const gapDistribution = buildGapDistribution(r.hw);
+  // Build modal header with day tabs
+  const headerHtml = `
+    <div class="modalRouteHeader">
+      <span class="modalRouteBadge">${route}</span>
+      <span class="modalRouteName">Route ${route}</span>
+    </div>
+    <div class="modalTimeRange">Analysis ${t0} - ${t1}</div>
+    <div class="modalDayTabs">
+      <button class="modalDayTab ${day==='Weekday'?'active':''}" onclick="switchModalDay('Weekday')">WEEKDAY</button>
+      <button class="modalDayTab ${day==='Saturday'?'active':''}" onclick="switchModalDay('Saturday')">SATURDAY</button>
+      <button class="modalDayTab ${day==='Sunday'?'active':''}" onclick="switchModalDay('Sunday')">SUNDAY</button>
+    </div>
+  `;
+
+  document.getElementById('modalTitle').innerHTML = headerHtml;
+
+  const dirDetails = r.dirDetails || getDirDetails(route, day);
+
+  // Calculate separate direction stats
+  const outboundTimes = dirDetails?.['0']?.times || [];
+  const inboundTimes = dirDetails?.['1']?.times || [];
+
+  const outboundGaps = calculateGaps(outboundTimes);
+  const inboundGaps = calculateGaps(inboundTimes);
+
+  const outboundAvg = outboundGaps.length ? Math.round(outboundGaps.reduce((a,b)=>a+b,0)/outboundGaps.length) : null;
+  const inboundAvg = inboundGaps.length ? Math.round(inboundGaps.reduce((a,b)=>a+b,0)/inboundGaps.length) : null;
+
+  const totalTrips = outboundTimes.length + inboundTimes.length;
+
+  // Build stats cards
+  const statsCardsHtml = `
+    <div class="statsCards">
+      <div class="statCard">
+        <div class="label">FREQUENCY TIER</div>
+        <div class="value"><span class="tier ${tierClass(r.tier)}">${tierToLabel(r.tier)}</span></div>
+      </div>
+      <div class="statCard">
+        <div class="label">AVG HEADWAY</div>
+        <div class="value" style="font-size:18px">
+          ${outboundAvg !== null ? `Outbound: ${outboundAvg}m` : ''}
+          ${outboundAvg !== null && inboundAvg !== null ? '<br>' : ''}
+          ${inboundAvg !== null ? `Inbound: ${inboundAvg}m` : ''}
+          ${outboundAvg === null && inboundAvg === null ? '—' : ''}
+        </div>
+      </div>
+      <div class="statCard">
+        <div class="label">TOTAL TRIPS</div>
+        <div class="value">${totalTrips}</div>
+      </div>
+    </div>
+  `;
+
+  // Build chart with separate direction lines
+  const chartSection = buildDirectionalChart(dirDetails, r.tier);
+
+  // Build departure times section
+  const departuresSection = buildCompactDeparturesSection(dirDetails, false);
 
   const body = document.getElementById('modalBody');
   body.innerHTML = `
     <div id="tabOverview" class="tabContent active">
+      ${statsCardsHtml}
       ${chartSection}
-    </div>
-    <div id="tabService" class="tabContent">
-      ${serviceWindowsSection}
-    </div>
-    <div id="tabGaps" class="tabContent">
-      <p><strong>Top gaps:</strong> ${gapHtml}</p>
-      ${gapDistribution}
     </div>
     <div id="tabDepartures" class="tabContent">
       ${departuresSection}
+    </div>
+  `;
+}
+
+function switchModalDay(day){
+  currentModalDay = day;
+  renderModalContent();
+}
+
+function calculateGaps(times){
+  if(!times || times.length < 2) return [];
+  const sorted = [...times].sort((a,b) => a-b);
+  const gaps = [];
+  for(let i = 1; i < sorted.length; i++){
+    const gap = sorted[i] - sorted[i-1];
+    if(gap >= 5 && gap <= 240) gaps.push(gap);
+  }
+  return gaps;
+}
+
+function buildDirectionalChart(dirDetails, tier){
+  const outboundTimes = (dirDetails?.['0']?.times || []).sort((a,b)=>a-b);
+  const inboundTimes = (dirDetails?.['1']?.times || []).sort((a,b)=>a-b);
+
+  if(outboundTimes.length < 2 && inboundTimes.length < 2) return '<p class="muted">Not enough data for chart</p>';
+
+  // Chart dimensions
+  const width = 850, height = 200, padL = 50, padR = 20, padT = 25, padB = 40;
+  const chartW = width - padL - padR;
+  const chartH = height - padT - padB;
+
+  // Time scale
+  const t0 = document.getElementById('t0')?.value || '07:00';
+  const t1 = document.getElementById('t1')?.value || '22:00';
+  const minTime = t2m(t0);
+  const maxTime = t2m(t1);
+
+  // Calculate gaps for each direction
+  const outboundData = [];
+  for(let i = 1; i < outboundTimes.length; i++){
+    const gap = outboundTimes[i] - outboundTimes[i-1];
+    if(gap >= 5 && gap <= 120){
+      outboundData.push({time: outboundTimes[i-1], gap});
+    }
+  }
+
+  const inboundData = [];
+  for(let i = 1; i < inboundTimes.length; i++){
+    const gap = inboundTimes[i] - inboundTimes[i-1];
+    if(gap >= 5 && gap <= 120){
+      inboundData.push({time: inboundTimes[i-1], gap});
+    }
+  }
+
+  // Find max gap for Y scale
+  const allGaps = [...outboundData.map(d=>d.gap), ...inboundData.map(d=>d.gap)];
+  const maxGap = Math.min(60, Math.max(12, ...allGaps) + 5);
+
+  const scaleX = t => (t - minTime) / (maxTime - minTime) * chartW;
+  const scaleY = g => chartH - (g / maxGap) * chartH;
+
+  // Build outbound path (cyan)
+  let outPath = '';
+  let outDots = '';
+  if(outboundData.length >= 1){
+    outPath = `M ${padL + scaleX(outboundData[0].time)} ${padT + scaleY(outboundData[0].gap)}`;
+    for(let i = 1; i < outboundData.length; i++){
+      outPath += ` L ${padL + scaleX(outboundData[i].time)} ${padT + scaleY(outboundData[i].gap)}`;
+    }
+    outDots = outboundData.map(d =>
+      `<circle cx="${padL + scaleX(d.time)}" cy="${padT + scaleY(d.gap)}" r="4" fill="#06b6d4"/>`
+    ).join('');
+  }
+
+  // Build inbound path (green)
+  let inPath = '';
+  let inDots = '';
+  if(inboundData.length >= 1){
+    inPath = `M ${padL + scaleX(inboundData[0].time)} ${padT + scaleY(inboundData[0].gap)}`;
+    for(let i = 1; i < inboundData.length; i++){
+      inPath += ` L ${padL + scaleX(inboundData[i].time)} ${padT + scaleY(inboundData[i].gap)}`;
+    }
+    inDots = inboundData.map(d =>
+      `<circle cx="${padL + scaleX(d.time)}" cy="${padT + scaleY(d.gap)}" r="4" fill="#10b981"/>`
+    ).join('');
+  }
+
+  // X-axis labels
+  const xLabels = [];
+  for(let h = Math.ceil(minTime/60); h <= Math.floor(maxTime/60); h++){
+    const x = padL + scaleX(h * 60);
+    const label = h > 12 ? `${h-12}p` : h === 12 ? '12p' : h === 0 ? '12a' : `${h}a`;
+    xLabels.push(`<text x="${x}" y="${height - 8}" class="chartAxisLabel" text-anchor="middle">${label}</text>`);
+  }
+
+  // Y-axis labels
+  const yLabels = [];
+  const yTicks = [0, 10, 20, 30, maxGap > 40 ? 40 : null, maxGap > 50 ? 60 : null].filter(v => v !== null && v <= maxGap);
+  for(const g of yTicks){
+    const y = padT + scaleY(g);
+    yLabels.push(`<text x="${padL - 8}" y="${y + 4}" class="chartAxisLabel" text-anchor="end">${g}</text>`);
+    yLabels.push(`<line x1="${padL}" y1="${y}" x2="${padL + chartW}" y2="${y}" stroke="var(--line)" stroke-dasharray="2,2"/>`);
+  }
+
+  return `
+    <div class="chartSection">
+      <h4>Frequency Throughout Day</h4>
+      <div class="chartContainer">
+        <svg class="chartSvg" viewBox="0 0 ${width} ${height}" style="height:200px">
+          <!-- Axes -->
+          <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + chartH}" class="chartAxis"/>
+          <line x1="${padL}" y1="${padT + chartH}" x2="${padL + chartW}" y2="${padT + chartH}" class="chartAxis"/>
+          ${yLabels.join('')}
+          ${xLabels.join('')}
+
+          <!-- Outbound line (cyan) -->
+          ${outPath ? `<path d="${outPath}" fill="none" stroke="#06b6d4" stroke-width="2"/>` : ''}
+          ${outDots}
+
+          <!-- Inbound line (green) -->
+          ${inPath ? `<path d="${inPath}" fill="none" stroke="#10b981" stroke-width="2"/>` : ''}
+          ${inDots}
+
+          <text x="8" y="${padT + chartH/2}" class="chartAxisLabel" transform="rotate(-90,8,${padT + chartH/2})">Headway (min)</text>
+        </svg>
+        <div class="chartLegendDir">
+          <span><span class="dot" style="background:#06b6d4"></span>Outbound</span>
+          <span><span class="dot" style="background:#10b981"></span>Inbound</span>
+        </div>
+      </div>
     </div>
   `;
 }
