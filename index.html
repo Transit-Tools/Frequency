@@ -6,29 +6,37 @@
 <title>🚌 GTFS Frequency Screener</title>
 <style>
   :root{
+    /* Light theme (default) */
+    --bg:#f3f4f6; --panel:#ffffff; --muted:#9ca3af; --text:#111827; --line:#e5e7eb;
+    --chip:#f3f4f6; --chipText:#111827; --accent:#3b82f6; --btn:#3b82f6; --btnText:#fff;
+    --good:#10b981; --ok:#22c55e; --mid:#06b6d4; --warn:#f59e0b; --meh:#ef4444; --dark:#6b7280;
+    --zebra: rgba(0,0,0,.03);
+    --textSecondary:#6b7280;
+  }
+  .dark{
+    /* Dark theme */
     --bg:#0b1220; --panel:#111827; --muted:#9ca3af; --text:#e5e7eb; --line:#1f2937;
     --chip:#1f2937; --chipText:#cbd5e1; --accent:#60a5fa; --btn:#2563eb; --btnText:#fff;
     --good:#10b981; --ok:#22c55e; --mid:#06b6d4; --warn:#f59e0b; --meh:#ef4444; --dark:#374151;
     --zebra: rgba(255,255,255,.02);
-  }
-  .light{
-    --bg:#f8fafc; --panel:#ffffff; --muted:#475569; --text:#0f172a; --line:#e5e7eb;
-    --chip:#f1f5f9; --chipText:#0f172a; --accent:#2563eb; --btn:#111827; --btnText:#fff;
-    --good:#047857; --ok:#15803d; --mid:#0e7490; --warn:#b45309; --meh:#b91c1c; --dark:#111827;
-    --zebra: rgba(0,0,0,.03);
+    --textSecondary:#9ca3af;
   }
   *{box-sizing:border-box}
   body{
     font-family: ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;
-    background: radial-gradient(1200px 600px at 10% 0%, #0e172a 0%, var(--bg) 50%, #090f1b 100%);
+    background: var(--bg);
     color: var(--text);
     margin:0; padding:0; min-height:100vh;
     transition:background .3s ease,color .3s ease;
   }
+  .dark body, body.dark{
+    background: radial-gradient(1200px 600px at 10% 0%, #0e172a 0%, var(--bg) 50%, #090f1b 100%);
+  }
   .wrap{max-width:1200px;margin:0 auto;padding:24px;display:flex;flex-direction:column;min-height:100vh}
   header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap}
   h1{font-size:22px;margin:0;font-weight:800;letter-spacing:.2px}
-  .panel{background:var(--panel); border:1px solid var(--line); border-radius:16px; box-shadow: 0 6px 20px rgba(0,0,0,.15); padding:16px; margin-bottom:16px}
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:16px; box-shadow: 0 4px 12px rgba(0,0,0,.08); padding:16px; margin-bottom:16px}
+  .dark .panel{box-shadow: 0 6px 20px rgba(0,0,0,.15)}
   #tableWrap{display:flex;flex-direction:column;flex:1;min-height:0}
   .resultsScroll{flex:unset;min-height:auto;overflow:visible;max-height:none}
   .grid{display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:12px; align-items:end}
@@ -42,7 +50,7 @@
   .fileName{font-size:12px;color:var(--muted);margin-top:4px;word-break:break-word}
   .rangeMessage{margin-top:8px;font-size:12px;color:#f97316;font-weight:700}
   .toolbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:12px}
-  .btn{background:var(--btn); color:var(--btnText); border:0; border-radius:10px; padding:10px 14px; font-weight:800; cursor:pointer}
+  .btn{background:var(--btn); color:var(--btnText); border:1px solid transparent; border-radius:10px; padding:10px 14px; font-weight:800; cursor:pointer; transition:all .2s}
   .btn:disabled{opacity:.5; cursor:not-allowed}
   .chip{background:var(--chip); color:var(--chipText); padding:6px 10px; border-radius:999px; font-size:12px; border:1px solid var(--line)}
   .seg{display:flex; gap:6px; background:transparent; border:1px solid var(--line); padding:4px; border-radius:12px}
@@ -77,12 +85,12 @@
 
   /* Table */
   table{width:100%; border-collapse:separate; border-spacing:0; font-size:14px}
-  thead th{position:sticky; top:0; backdrop-filter: blur(6px); z-index:3; background:rgba(17,24,39,.9);}
-  .light thead th{background:#fffffff0}
+  thead th{position:sticky; top:0; backdrop-filter: blur(6px); z-index:3; background:#fffffff0;}
+  .dark thead th{background:rgba(17,24,39,.9)}
   th,td{border-bottom:1px solid var(--line); padding:10px 12px; text-align:center}
   tbody tr:nth-child(odd){background:var(--zebra)}
-  td.route, th.route{text-align:left; position:sticky; left:0; background:rgba(17,24,39,.95); z-index:2}
-  .light td.route, .light th.route{background:#fffffff0}
+  td.route, th.route{text-align:left; position:sticky; left:0; background:#fffffff0; z-index:2}
+  .dark td.route, .dark th.route{background:rgba(17,24,39,.95)}
   .tier{font-weight:900; padding:6px 10px; border-radius:999px; display:inline-block; min-width:64px}
   .t10{background:rgba(16,185,129,.15); color:var(--good); border:1px solid rgba(16,185,129,.35)}
   .t15{background:rgba(34,197,94,.15); color:var(--ok); border:1px solid rgba(34,197,94,.35)}
@@ -90,7 +98,7 @@
   .t30{background:rgba(245,158,11,.15); color:var(--warn); border:1px solid rgba(245,158,11,.35)}
   .t60{background:rgba(239,68,68,.15); color:var(--meh); border:1px solid rgba(239,68,68,.35)}
   .tBig{background:rgba(107,114,128,.15); color:#cbd5e1; border:1px solid rgba(107,114,128,.4)}
-  .badge{background:transparent; border:1px solid var(--line); color:var(--chipText); padding:6px 10px; border-radius:8px; font-size:12px; font-weight:700}
+  .badge{background:var(--chip); border:1px solid var(--line); color:var(--chipText); padding:6px 10px; border-radius:8px; font-size:12px; font-weight:700}
   .highlight{animation:flash 1.6s ease}
   @keyframes flash{0%{background:#04785733}100%{background:transparent}}
 
@@ -117,8 +125,8 @@
   .gapTableWrap h5{margin:0 0 4px;font-size:13px;color:var(--chipText)}
   .gapTableScroll{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:10px}
   .gapTable{width:100%;border-collapse:collapse;font-size:13px;font-family:ui-monospace,monospace}
-  .gapTable thead th{position:sticky;top:0;background:rgba(17,24,39,.9);z-index:1}
-  .light .gapTable thead th{background:#fffffff0}
+  .gapTable thead th{position:sticky;top:0;background:#fffffff0;z-index:1}
+  .dark .gapTable thead th{background:rgba(17,24,39,.9)}
   .gapTable th,.gapTable td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
   .numCol{width:42px;text-align:right}
   .gapBadge{display:inline-block;border:1px solid var(--line);border-radius:8px;padding:2px 6px}
@@ -129,22 +137,22 @@
   .serviceWindows h4{margin:0 0 8px;font-size:14px}
   .serviceWindowGrid{display:grid;gap:12px}
   .serviceWindowGrid.dual{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
-  .serviceWindowWrap{border:1px solid var(--line);border-radius:10px;padding:10px;background:rgba(15,23,42,.3)}
-  .light .serviceWindowWrap{background:rgba(148,163,184,.08)}
+  .serviceWindowWrap{border:1px solid var(--line);border-radius:10px;padding:10px;background:rgba(148,163,184,.08)}
+  .dark .serviceWindowWrap{background:rgba(15,23,42,.3)}
   .serviceWindowWrap h5{margin:0 0 6px;font-size:13px;color:var(--chipText);text-transform:uppercase;letter-spacing:.03em}
   .serviceWindowEmpty{color:var(--muted);font-size:12px;padding:6px 0}
   .serviceWindowScroll{max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:10px}
   .serviceWindowTable{width:100%;border-collapse:collapse;font-size:12px;font-family:ui-monospace,monospace}
   .serviceWindowTable th,.serviceWindowTable td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
-  .serviceWindowTable th{background:rgba(17,24,39,.9);position:sticky;top:0;z-index:1}
-  .light .serviceWindowTable th{background:#fffffff0}
+  .serviceWindowTable th{background:#fffffff0;position:sticky;top:0;z-index:1}
+  .dark .serviceWindowTable th{background:rgba(17,24,39,.9)}
   .exceptionList{font-size:12px;color:var(--muted);line-height:1.4}
 
   /* Frequency Chart */
   .chartSection{margin:16px 0}
   .chartSection h4{margin:0 0 8px;font-size:14px}
-  .chartContainer{border:1px solid var(--line);border-radius:10px;padding:12px;background:rgba(15,23,42,.3)}
-  .light .chartContainer{background:rgba(148,163,184,.08)}
+  .chartContainer{border:1px solid var(--line);border-radius:10px;padding:12px;background:rgba(148,163,184,.08)}
+  .dark .chartContainer{background:rgba(15,23,42,.3)}
   .chartSvg{width:100%;height:180px}
   .chartAxis{stroke:var(--line);stroke-width:1}
   .chartAxisLabel{fill:var(--muted);font-size:10px}
@@ -162,8 +170,8 @@
   .chartLegend .dot{width:10px;height:10px;border-radius:50%}
   .chartWithStats{display:flex;gap:16px;align-items:flex-start}
   .chartWithStats .chartContainer{flex:1}
-  .chartWithStats .statsSidebar{flex:0 0 200px;display:flex;flex-direction:column;gap:12px;padding:12px;background:rgba(15,23,42,.3);border:1px solid var(--line);border-radius:10px}
-  .light .chartWithStats .statsSidebar{background:rgba(148,163,184,.08)}
+  .chartWithStats .statsSidebar{flex:0 0 200px;display:flex;flex-direction:column;gap:12px;padding:12px;background:rgba(148,163,184,.08);border:1px solid var(--line);border-radius:10px}
+  .dark .chartWithStats .statsSidebar{background:rgba(15,23,42,.3)}
   .statsSidebar .statItem{display:flex;flex-direction:column;gap:4px}
   .statsSidebar .statLabel{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
   .statsSidebar .statValue{font-size:20px;font-weight:800;color:var(--text)}
@@ -190,19 +198,26 @@
   .gapDistribution h4{margin:0 0 8px;font-size:14px}
   .gapDistTable{width:100%;max-width:400px;border-collapse:collapse;font-size:13px;border:1px solid var(--line);border-radius:10px;font-family:ui-monospace,monospace}
   .gapDistTable th,.gapDistTable td{border-bottom:1px solid var(--line);padding:8px 12px;text-align:left}
-  .gapDistTable th{background:rgba(17,24,39,.9)}
-  .light .gapDistTable th{background:#fffffff0}
+  .gapDistTable th{background:#fffffff0}
+  .dark .gapDistTable th{background:rgba(17,24,39,.9)}
   .gapDistTable td:last-child{text-align:right}
 
   /* New upload row layout */
   .uploadRow{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
   .fileBtn{display:flex;align-items:center;gap:8px}
   .fileBtn label{cursor:pointer}
-  .btnDemo{background:#374151;color:#e5e7eb}
-  .btnDemo:hover{background:#4b5563}
-  .btnAnalyze{background:#10b981}
-  .btnAnalyze:hover{background:#059669}
-  .btnAnalyze:disabled{background:#374151;opacity:.5}
+  .fileBtn .btn{background:#fff;color:#374151;border:1px solid #d1d5db}
+  .fileBtn .btn:hover{background:#f3f4f6}
+  .dark .fileBtn .btn{background:var(--panel);color:var(--text);border:1px solid var(--line)}
+  .dark .fileBtn .btn:hover{background:var(--chip)}
+  .btnDemo{background:#e5e7eb;color:#374151;border:1px solid #d1d5db}
+  .btnDemo:hover{background:#d1d5db}
+  .dark .btnDemo{background:#374151;color:#e5e7eb;border:1px solid #4b5563}
+  .dark .btnDemo:hover{background:#4b5563}
+  .btnAnalyze{background:#3b82f6;color:#fff}
+  .btnAnalyze:hover{background:#2563eb}
+  .btnAnalyze:disabled{background:#d1d5db;color:#9ca3af;opacity:.7}
+  .dark .btnAnalyze:disabled{background:#374151;color:#6b7280}
   .timeRange{display:flex;align-items:center;gap:8px;color:var(--muted);font-weight:600}
   .timeRange input[type="time"]{width:100px;padding:8px 10px}
   .daySelector{display:flex;align-items:center;gap:8px}
@@ -211,17 +226,19 @@
 
   /* Tier summary boxes */
   .tierBoxes{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
-  .tierBox{border:2px solid;border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:all .2s;background:transparent}
-  .tierBox:hover{transform:translateY(-2px)}
+  .tierBox{border:2px solid;border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:all .2s;background:#fff}
+  .dark .tierBox{background:transparent}
+  .tierBox:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.1)}
+  .dark .tierBox:hover{box-shadow:0 4px 12px rgba(0,0,0,.3)}
   .tierBox.active{box-shadow:0 0 0 3px var(--accent)}
-  .tierName{font-size:12px;font-weight:800;letter-spacing:.05em;margin-bottom:4px}
+  .tierName{font-size:12px;font-weight:800;letter-spacing:.05em;margin-bottom:4px;color:var(--textSecondary)}
   .tierCount{font-size:28px;font-weight:900}
-  .tier10{border-color:#10b981;color:#10b981}
-  .tier15{border-color:#22c55e;color:#22c55e}
-  .tier20{border-color:#06b6d4;color:#06b6d4}
-  .tier30{border-color:#f59e0b;color:#f59e0b}
-  .tier60{border-color:#ef4444;color:#ef4444}
-  .tierBig{border-color:#6b7280;color:#6b7280}
+  .tier10{border-color:#10b981}.tier10 .tierCount{color:#10b981}
+  .tier15{border-color:#22c55e}.tier15 .tierCount{color:#22c55e}
+  .tier20{border-color:#06b6d4}.tier20 .tierCount{color:#06b6d4}
+  .tier30{border-color:#f59e0b}.tier30 .tierCount{color:#f59e0b}
+  .tier60{border-color:#ef4444}.tier60 .tierCount{color:#ef4444}
+  .tierBig{border-color:#6b7280}.tierBig .tierCount{color:#6b7280}
 
   /* Route table new styles */
   .tableHeader{display:flex;justify-content:flex-end;margin-bottom:8px}
@@ -245,8 +262,8 @@
 
   /* Modal stats cards */
   .statsCards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
-  .statCard{background:rgba(15,23,42,.4);border:1px solid var(--line);border-radius:12px;padding:16px}
-  .light .statCard{background:rgba(148,163,184,.08)}
+  .statCard{background:rgba(148,163,184,.08);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .dark .statCard{background:rgba(15,23,42,.4)}
   .statCard .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
   .statCard .value{font-size:24px;font-weight:800}
   .statCard .subvalue{font-size:13px;color:var(--muted);margin-top:4px}
@@ -416,14 +433,16 @@ if(document.readyState==='loading'){
 // theme
 document.getElementById('theme').addEventListener('click', toggleTheme);
 (function initTheme(){
-  const saved=localStorage.getItem('theme')||'dark';
-  if(saved==='light') document.body.classList.add('light');
+  const saved=localStorage.getItem('theme')||'light';
+  if(saved==='dark') document.body.classList.add('dark');
+  const themeBtn = document.getElementById('theme');
+  themeBtn.textContent = document.body.classList.contains('dark') ? '🌙' : '☀️';
 })();
 function toggleTheme(){
-  document.body.classList.toggle('light');
+  document.body.classList.toggle('dark');
   const themeBtn = document.getElementById('theme');
-  themeBtn.textContent = document.body.classList.contains('light') ? '☀️' : '🌙';
-  localStorage.setItem('theme', document.body.classList.contains('light')?'light':'dark');
+  themeBtn.textContent = document.body.classList.contains('dark') ? '🌙' : '☀️';
+  localStorage.setItem('theme', document.body.classList.contains('dark')?'dark':'light');
 }
 
 // Day sort dropdown
