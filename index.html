@@ -317,6 +317,24 @@
     .filterBar .search{width:100%}
     .filterBar .routeCount{text-align:right}
   }
+
+  /* Validation column and icons */
+  .validCol{width:80px;text-align:center}
+  .validIcon{font-size:16px;font-weight:bold;cursor:pointer}
+  .validIcon.unverified{color:#9ca3af}
+  .validIcon.correct{color:#10b981}
+  .validIcon.incorrect{color:#ef4444}
+  .validationPanel{margin-top:16px;padding:16px;background:rgba(148,163,184,.08);border:1px solid var(--line);border-radius:10px}
+  .validationControls{display:flex;flex-direction:column;gap:12px}
+  .validationControls label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase}
+  .validationControls select,.validationControls textarea{padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text)}
+  .validationMeta{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+
+  /* Feed metadata */
+  .feedMeta{margin-top:12px;padding:12px;background:rgba(148,163,184,.08);border:1px solid var(--line);border-radius:10px;font-size:13px}
+  .feedMeta div{margin-bottom:4px}
+  .feedMeta div:last-child{margin-bottom:0}
+  .feedMeta strong{color:var(--text);font-weight:700}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -343,10 +361,16 @@
           <input id="t1" type="time" value="22:00">
         </div>
         <button id="go" class="btn btnAnalyze" type="button" disabled>📊 ANALYZE</button>
+        <button id="exportBtn" class="btn" style="display:none" onclick="exportResults()">💾 Export Results</button>
       </div>
       <div id="rangeMessage" class="rangeMessage" role="status" aria-live="polite"></div>
       <!-- Hidden merge checkbox - default on -->
       <input id="merge" type="checkbox" checked style="display:none">
+      <div id="feedMetadata" class="feedMeta" style="display:none">
+        <div><strong>Feed:</strong> <span id="feedFilename"></span></div>
+        <div><strong>Valid:</strong> <span id="feedValidity"></span></div>
+        <div><strong>Analyzed:</strong> <span id="analyzedTime"></span></div>
+      </div>
     </section>
 
     <!-- Day Pills + Tier Summary Boxes -->
@@ -418,6 +442,7 @@
               <th class="numCol">TRIPS</th>
               <th class="numCol">BEST</th>
               <th class="numCol">WORST</th>
+              <th class="validCol">VALIDATED</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -441,6 +466,9 @@
 let RAW_ROWS = []; // {route, dir, day, b, avg, tier, hw:[], times:[], dirDetails:{'0':{times:[],tier},'1':{...}} }
 let ROUTE_DATA = {}; // {routeName: {Weekday: rowData, Saturday: rowData, Sunday: rowData}}
 let activeTierFilter = null;
+let VALIDATIONS = {}; // {route: {day: {status, notes, verifiedAt, expectedTier}}}
+window.FEED_INFO = null;
+window.ANALYZED_AT = null;
 
 const fileEl = document.getElementById('gtfs');
 const btn = document.getElementById('go');
@@ -486,6 +514,50 @@ function toggleTheme(){
   themeBtn.textContent = document.body.classList.contains('dark') ? '🌙' : '☀️';
   localStorage.setItem('theme', document.body.classList.contains('dark')?'dark':'light');
 }
+
+// Validation functions
+function loadValidations(){
+  const saved = localStorage.getItem('gtfs-validations');
+  if(saved) VALIDATIONS = JSON.parse(saved);
+}
+
+function saveValidation(){
+  const route = currentModalRoute;
+  const day = currentModalDay;
+  const status = document.getElementById('validationStatus').value;
+  const notes = document.getElementById('validationNotes').value;
+  const expectedTier = document.getElementById('expectedTier')?.value;
+
+  if(!VALIDATIONS[route]) VALIDATIONS[route] = {};
+  VALIDATIONS[route][day] = {
+    status,
+    notes,
+    verifiedAt: new Date().toISOString(),
+    expectedTier: status === 'incorrect' ? expectedTier : null
+  };
+
+  localStorage.setItem('gtfs-validations', JSON.stringify(VALIDATIONS));
+  render(); // Refresh table to show new validation status
+  renderModalContent(); // Refresh modal to show updated validation
+  alert('Validation saved!');
+}
+
+function getValidationIcon(route, day){
+  const v = VALIDATIONS[route]?.[day];
+  if(!v || v.status === 'unverified') return '<span class="validIcon unverified" title="Not verified">?</span>';
+  if(v.status === 'correct') return '<span class="validIcon correct" title="Verified correct">✓</span>';
+  if(v.status === 'incorrect') return '<span class="validIcon incorrect" title="Verified incorrect">✗</span>';
+  return '<span class="validIcon unverified" title="Not verified">?</span>';
+}
+
+function toggleExpectedTierDiv(){
+  const status = document.getElementById('validationStatus').value;
+  const div = document.getElementById('incorrectTierDiv');
+  if(div) div.style.display = status === 'incorrect' ? 'block' : 'none';
+}
+
+// Load validations on page load
+loadValidations();
 
 // Day pill clicks
 let currentSortDay = 'Weekday';
@@ -781,6 +853,26 @@ async function analyze(){
     parseCsv(await zip.file('calendar.txt').async('text')),
   ]);
 
+  // Try to load feed_info.txt
+  let feedInfo = null;
+  const feedInfoFile = zip.file('feed_info.txt');
+  if(feedInfoFile){
+    const feedInfoCsv = await parseCsv(await feedInfoFile.async('text'));
+    if(feedInfoCsv.length > 0){
+      feedInfo = feedInfoCsv[0];
+    }
+  }
+
+  // Store feed metadata globally
+  window.FEED_INFO = {
+    filename: file.name,
+    validFrom: feedInfo?.feed_start_date || null,
+    validTo: feedInfo?.feed_end_date || null,
+    version: feedInfo?.feed_version || null,
+    publisher: feedInfo?.feed_publisher_name || null
+  };
+  window.ANALYZED_AT = new Date().toISOString();
+
   const routeById={}; for(const r of routes){ if(r.route_id) routeById[r.route_id]=r; }
   const calByService={}; for(const c of calendar){ if(c.service_id) calByService[c.service_id]=c; }
 
@@ -888,6 +980,18 @@ async function analyze(){
   const tableWrapEl = document.getElementById('tableWrap');
   tableWrapEl.style.display='block';
   updateResultsMaxHeight();
+
+  // Populate and show feed metadata
+  document.getElementById('feedFilename').textContent = FEED_INFO.filename;
+  document.getElementById('feedValidity').textContent =
+    FEED_INFO.validFrom && FEED_INFO.validTo
+      ? `${FEED_INFO.validFrom} to ${FEED_INFO.validTo}`
+      : 'Unknown';
+  document.getElementById('analyzedTime').textContent = new Date(ANALYZED_AT).toLocaleString();
+  document.getElementById('feedMetadata').style.display = 'block';
+
+  // Show export button
+  document.getElementById('exportBtn').style.display = 'inline-block';
 }
 
 function cloneDirDetails(details){
@@ -1041,6 +1145,18 @@ function render(opts={}){
       worstCell.textContent = '—';
     }
     tr.appendChild(worstCell);
+
+    // Validation: show icon for current sortDay
+    const validCell = document.createElement('td');
+    validCell.className = 'validCol';
+    validCell.innerHTML = getValidationIcon(route, sortDay);
+    validCell.style.cursor = 'pointer';
+    validCell.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const dayData = ROUTE_DATA[route][sortDay];
+      if(dayData) openModal(dayData, sortDay);
+    });
+    tr.appendChild(validCell);
 
     // Click on route name opens modal for sortDay
     routeCell.style.cursor = 'pointer';
@@ -1329,9 +1445,56 @@ function renderModalContent(){
   // Build service windows section
   const serviceWindowsSection = buildServiceWindowsSection(r, dirDetails, true);
 
+  // Build validation panel
+  const validation = VALIDATIONS[route]?.[day];
+  const feedValidity = FEED_INFO?.validFrom && FEED_INFO?.validTo
+    ? `${FEED_INFO.validFrom} to ${FEED_INFO.validTo}`
+    : 'Unknown';
+  const analyzedAt = ANALYZED_AT ? new Date(ANALYZED_AT).toLocaleString() : 'Unknown';
+  const verifiedAt = validation?.verifiedAt ? new Date(validation.verifiedAt).toLocaleString() : 'Not verified';
+
+  const validationPanelHtml = `
+    <div class="validationPanel panel">
+      <h4>Validation Status</h4>
+
+      <div class="validationControls">
+        <label>Status</label>
+        <select id="validationStatus" onchange="toggleExpectedTierDiv()">
+          <option value="unverified" ${!validation || validation.status === 'unverified' ? 'selected' : ''}>? Unverified</option>
+          <option value="correct" ${validation?.status === 'correct' ? 'selected' : ''}>✓ Correct</option>
+          <option value="incorrect" ${validation?.status === 'incorrect' ? 'selected' : ''}>✗ Incorrect</option>
+        </select>
+
+        <label>Notes</label>
+        <textarea id="validationNotes" placeholder="e.g., Checked against Jan 2025 PDF schedule" rows="3">${validation?.notes || ''}</textarea>
+
+        <div id="incorrectTierDiv" style="display:${validation?.status === 'incorrect' ? 'block' : 'none'}">
+          <label>Expected Tier (if incorrect)</label>
+          <select id="expectedTier">
+            <option value="10" ${validation?.expectedTier === '10' ? 'selected' : ''}>Freq+ (≤10 min)</option>
+            <option value="15" ${validation?.expectedTier === '15' ? 'selected' : ''}>Freq (≤15 min)</option>
+            <option value="20" ${validation?.expectedTier === '20' ? 'selected' : ''}>Good (≤20 min)</option>
+            <option value="30" ${validation?.expectedTier === '30' ? 'selected' : ''}>Basic (≤30 min)</option>
+            <option value="60" ${validation?.expectedTier === '60' ? 'selected' : ''}>Infreq (≤60 min)</option>
+            <option value=">60" ${validation?.expectedTier === '>60' ? 'selected' : ''}>Sparse (>60 min)</option>
+          </select>
+        </div>
+
+        <button onclick="saveValidation()" class="btn">Save Validation</button>
+      </div>
+
+      <div class="validationMeta">
+        <div><strong>Feed validity:</strong> <span id="modalFeedValidity">${feedValidity}</span></div>
+        <div><strong>Analyzed:</strong> <span id="modalAnalyzedAt">${analyzedAt}</span></div>
+        <div><strong>Last verified:</strong> <span id="verifiedAt">${verifiedAt}</span></div>
+      </div>
+    </div>
+  `;
+
   const body = document.getElementById('modalBody');
   body.innerHTML = `
     ${statsCardsHtml}
+    ${validationPanelHtml}
     ${chartSection}
     ${gapDistSection}
     <div class="compactDepartures">
@@ -1478,6 +1641,98 @@ function updateResultsMaxHeight(){
   if(!results) return;
   results.style.removeProperty('max-height');
   results.style.overflow='visible';
+}
+
+// Export functions
+function exportResults(){
+  const agency = prompt('Enter agency slug (e.g., spokane-transit):');
+  if(!agency) return;
+
+  const agencyName = prompt('Enter agency full name (e.g., Spokane Transit Authority):');
+  if(!agencyName) return;
+
+  const data = {
+    schema_version: '1.0',
+
+    check: {
+      id: `${agency}_${new Date().toISOString().split('T')[0]}`,
+      created_at: ANALYZED_AT
+    },
+
+    agency: {
+      id: agency,
+      name: agencyName
+    },
+
+    gtfs_feed: {
+      filename: FEED_INFO?.filename || 'unknown.zip',
+      valid_from: FEED_INFO?.validFrom || null,
+      valid_to: FEED_INFO?.validTo || null,
+      version: FEED_INFO?.version || null,
+      publisher: FEED_INFO?.publisher || null
+    },
+
+    methodology: {
+      version: '1.0',
+      window_start: document.getElementById('t0').value,
+      window_end: document.getElementById('t1').value,
+      grace_minutes: 5,
+      max_violations: 2,
+      merge_directions: document.getElementById('merge').checked
+    },
+
+    routes: buildRouteExports()
+  };
+
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${agency}_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function buildRouteExports(){
+  const routes = [];
+
+  for(const routeName of Object.keys(ROUTE_DATA)){
+    const route = {
+      route_id: routeName,
+      route_name: routeName
+    };
+
+    for(const day of ['Weekday', 'Saturday', 'Sunday']){
+      const dayData = ROUTE_DATA[routeName][day];
+      if(!dayData) continue;
+
+      const dayKey = day.toLowerCase();
+      route[dayKey] = {
+        tier: dayData.tier,
+        avg_headway: dayData.avg,
+        best_headway: dayData.best,
+        max_gap: Math.max(...dayData.hw),
+        total_trips: dayData.times.length,
+        violations: dayData.hw.filter(h => h > tierThreshold(dayData.tier) && h <= tierThreshold(dayData.tier) + 5).length
+      };
+
+      // Include validation if exists
+      const validation = VALIDATIONS[routeName]?.[day];
+      if(validation){
+        route[dayKey].validation = {
+          status: validation.status,
+          verified_at: validation.verifiedAt,
+          notes: validation.notes,
+          expected_tier: validation.expectedTier
+        };
+      }
+    }
+
+    routes.push(route);
+  }
+
+  return routes;
 }
 </script>
 </body>
