@@ -196,12 +196,24 @@
 
   /* Gap distribution */
   .gapDistribution{margin-top:16px}
-  .gapDistribution h4{margin:0 0 8px;font-size:14px}
+  .gapDistribution h4{margin:0 0 12px;font-size:14px}
   .gapDistTable{width:100%;max-width:400px;border-collapse:collapse;font-size:13px;border:1px solid var(--line);border-radius:10px;font-family:ui-monospace,monospace}
   .gapDistTable th,.gapDistTable td{border-bottom:1px solid var(--line);padding:8px 12px;text-align:left}
   .gapDistTable th{background:#fffffff0}
   .dark .gapDistTable th{background:rgba(17,24,39,.9)}
   .gapDistTable td:last-child{text-align:right}
+  .gapDistBars{display:flex;flex-direction:column;gap:8px;max-width:500px}
+  .gapDistRow{display:flex;align-items:center;gap:8px;font-size:13px}
+  .gapDistLabel{width:70px;color:var(--muted);text-align:right;font-family:ui-monospace,monospace;flex-shrink:0}
+  .gapDistBarWrap{flex:1;height:20px;background:var(--line);border-radius:4px;overflow:hidden}
+  .gapDistBar{height:100%;border-radius:4px;transition:width 0.3s ease}
+  .gapDistBar.tier10{background:#10b981}
+  .gapDistBar.tier15{background:#22c55e}
+  .gapDistBar.tier20{background:#06b6d4}
+  .gapDistBar.tier30{background:#eab308}
+  .gapDistBar.tier60{background:#ef4444}
+  .gapDistBar.tierBig{background:#6b7280}
+  .gapDistCount{width:65px;font-family:ui-monospace,monospace;color:var(--text);flex-shrink:0}
 
   /* New upload row layout */
   .uploadRow{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
@@ -255,8 +267,10 @@
   .routeCount{font-size:13px;color:var(--muted);font-weight:500}
   .routeCount strong{color:var(--text);font-weight:700}
   .routeTable{width:100%}
-  .routeTable th.dayCol{width:25%}
+  .routeTable th.dayCol{width:20%}
   .routeTable td.dayCell{font-family:ui-monospace,monospace}
+  .routeTable th.numCol{width:60px;text-align:center}
+  .routeTable td.numCol{text-align:center;font-family:ui-monospace,monospace;font-size:13px;color:var(--textSecondary)}
   .dayCell .headway{font-weight:700;margin-right:8px}
   .dayCell .tierBadge{font-size:11px;padding:4px 8px;border-radius:6px;font-weight:700}
   .dayCell .noService{color:var(--muted);font-style:italic}
@@ -401,6 +415,9 @@
               <th class="dayCol">WEEKDAY</th>
               <th class="dayCol">SATURDAY</th>
               <th class="dayCol">SUNDAY</th>
+              <th class="numCol">TRIPS</th>
+              <th class="numCol">BEST</th>
+              <th class="numCol">WORST</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -986,6 +1003,45 @@ function render(opts={}){
       tr.appendChild(cell);
     }
 
+    // Trips, Best, Worst columns (based on sortDay)
+    const sortDayData = ROUTE_DATA[route][sortDay];
+
+    // Trips: total departures
+    const tripsCell = document.createElement('td');
+    tripsCell.className = 'numCol';
+    if(sortDayData){
+      const dirDetails = sortDayData.dirDetails || {};
+      const outboundTimes = dirDetails['0']?.times || [];
+      const inboundTimes = dirDetails['1']?.times || [];
+      const totalTrips = outboundTimes.length + inboundTimes.length;
+      tripsCell.textContent = totalTrips || sortDayData.times?.length || '—';
+    } else {
+      tripsCell.textContent = '—';
+    }
+    tr.appendChild(tripsCell);
+
+    // Best: median headway (representative "best" performance)
+    const bestCell = document.createElement('td');
+    bestCell.className = 'numCol';
+    if(sortDayData && sortDayData.hw && sortDayData.hw.length){
+      const best = Math.min(...sortDayData.hw);
+      bestCell.textContent = best + 'm';
+    } else {
+      bestCell.textContent = '—';
+    }
+    tr.appendChild(bestCell);
+
+    // Worst: longest gap
+    const worstCell = document.createElement('td');
+    worstCell.className = 'numCol';
+    if(sortDayData && sortDayData.hw && sortDayData.hw.length){
+      const worst = Math.max(...sortDayData.hw);
+      worstCell.textContent = worst + 'm';
+    } else {
+      worstCell.textContent = '—';
+    }
+    tr.appendChild(worstCell);
+
     // Click on route name opens modal for sortDay
     routeCell.style.cursor = 'pointer';
     routeCell.addEventListener('click', () => {
@@ -1090,9 +1146,17 @@ function buildServiceWindowsSection(row, dirDetails, merge){
   const opts={tolerance:2,minPairs:2};
   const outboundWindows=labelServiceWindows(deriveServiceWindows(dirDetails?.['0']?.times||[], opts));
   const inboundWindows=labelServiceWindows(deriveServiceWindows(dirDetails?.['1']?.times||[], opts));
+
+  // Only show section if at least one direction has service windows
+  if(!outboundWindows.length && !inboundWindows.length) return '';
+
   const outboundHtml = buildServiceWindowTable('Outbound', outboundWindows);
   const inboundHtml = buildServiceWindowTable('Inbound', inboundWindows);
-  return `<div class="sideBySide">${outboundHtml}${inboundHtml}</div>`;
+  return `
+    <div class="serviceWindows">
+      <h4>Service Periods</h4>
+      <div class="sideBySide">${outboundHtml}${inboundHtml}</div>
+    </div>`;
 }
 
 // Compact departure format: group by hour with HH | MM format
@@ -1125,36 +1189,48 @@ function buildCompactDeparturesSection(dirDetails, collapsed=true){
 
 
 
-function buildGapDistribution(headways){
+function buildGapDistributionBars(headways){
   if(!headways || !headways.length) return '<div class="muted">No gap data available</div>';
 
-  // Count frequency of each unique gap value
-  const gapCounts = new Map();
+  // Bucket gaps into categories
+  const buckets = [
+    {label: '≤10 min', min: 0, max: 10, count: 0, tierClass: 'tier10'},
+    {label: '11-15 min', min: 11, max: 15, count: 0, tierClass: 'tier15'},
+    {label: '16-20 min', min: 16, max: 20, count: 0, tierClass: 'tier20'},
+    {label: '21-30 min', min: 21, max: 30, count: 0, tierClass: 'tier30'},
+    {label: '>30 min', min: 31, max: Infinity, count: 0, tierClass: 'tier60'}
+  ];
+
   for(const h of headways){
-    gapCounts.set(h, (gapCounts.get(h) || 0) + 1);
+    for(const b of buckets){
+      if(h >= b.min && h <= b.max){
+        b.count++;
+        break;
+      }
+    }
   }
 
-  // Sort by gap value and format rows
-  const rows = [...gapCounts.entries()]
-    .sort((a, b) => a[0] - b[0])
-    .map(([gap, count]) =>
-      `<tr><td>${gap}</td><td>×${count}</td></tr>`
-    ).join('');
+  const maxCount = Math.max(...buckets.map(b => b.count), 1);
+
+  const rows = buckets.map(b => {
+    const pct = (b.count / maxCount) * 100;
+    const tripLabel = b.count === 1 ? 'trip' : 'trips';
+    return `
+      <div class="gapDistRow">
+        <span class="gapDistLabel">${b.label}</span>
+        <div class="gapDistBarWrap">
+          <div class="gapDistBar ${b.tierClass}" style="width:${pct}%"></div>
+        </div>
+        <span class="gapDistCount">${b.count} ${tripLabel}</span>
+      </div>`;
+  }).join('');
 
   return `
     <div class="gapDistribution">
       <h4>Gap Distribution</h4>
-      <table class="gapDistTable">
-        <thead>
-          <tr>
-            <th>Gap (min)</th>
-            <th>Count</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows}
-        </tbody>
-      </table>
+      <div class="gapDistBars">
+        ${rows}
+      </div>
     </div>`;
 }
 let currentModalRoute = null;
@@ -1214,12 +1290,16 @@ function renderModalContent(){
 
   const totalTrips = outboundTimes.length + inboundTimes.length;
 
+  // Calculate worst gap
+  const worstGap = r.hw && r.hw.length ? Math.max(...r.hw) : null;
+
   // Build stats cards
   const statsCardsHtml = `
     <div class="statsCards">
       <div class="statCard">
         <div class="label">FREQUENCY TIER</div>
         <div class="value"><span class="tier ${tierClass(r.tier)}">${tierToLabel(r.tier)}</span></div>
+        ${worstGap !== null ? `<div class="subvalue">Worst gap: ${worstGap}m</div>` : ''}
       </div>
       <div class="statCard">
         <div class="label">AVG HEADWAY</div>
@@ -1240,18 +1320,25 @@ function renderModalContent(){
   // Build chart with separate direction lines
   const chartSection = buildDirectionalChart(dirDetails, r.tier);
 
+  // Build gap distribution section (horizontal bar chart)
+  const gapDistSection = buildGapDistributionBars(r.hw);
+
   // Build departure times section
   const departuresSection = buildCompactDeparturesSection(dirDetails, false);
 
+  // Build service windows section
+  const serviceWindowsSection = buildServiceWindowsSection(r, dirDetails, true);
+
   const body = document.getElementById('modalBody');
   body.innerHTML = `
-    <div id="tabOverview" class="tabContent active">
-      ${statsCardsHtml}
-      ${chartSection}
-    </div>
-    <div id="tabDepartures" class="tabContent">
+    ${statsCardsHtml}
+    ${chartSection}
+    ${gapDistSection}
+    <div class="compactDepartures">
+      <h4>Departure Times</h4>
       ${departuresSection}
     </div>
+    ${serviceWindowsSection}
   `;
 }
 
