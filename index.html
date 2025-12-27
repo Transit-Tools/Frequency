@@ -286,12 +286,35 @@
   .modalDayTab:hover{border-color:var(--accent)}
 
   /* Modal stats cards */
-  .statsCards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
-  .statCard{background:rgba(148,163,184,.08);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .statsCards{display:flex;gap:12px;margin-bottom:16px}
+  .statCard{background:rgba(148,163,184,.08);border:1px solid var(--line);border-radius:12px;padding:16px;flex:1}
   .dark .statCard{background:rgba(15,23,42,.4)}
   .statCard .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
   .statCard .value{font-size:24px;font-weight:800}
   .statCard .subvalue{font-size:13px;color:var(--muted);margin-top:4px}
+  .statCard.tierCard{flex:0 0 auto;min-width:140px}
+  .statCard.combinedCard .label{margin-bottom:12px}
+  .combinedStats{display:flex;flex-direction:column;gap:8px}
+  .combinedRow{display:flex;align-items:center;gap:8px;font-size:14px}
+  .combinedRow .statLabel{color:var(--muted);min-width:90px}
+  .combinedRow .statValue{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .violationBadge{padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600}
+  .violationBadge.hard{background:#fecaca;color:#991b1b}
+  .dark .violationBadge.hard{background:#7f1d1d;color:#fecaca}
+  .violationBadge.grace{background:#fef3c7;color:#92400e}
+  .dark .violationBadge.grace{background:#78350f;color:#fef3c7}
+  .directionalStats{margin-bottom:16px}
+  .directionalStats h4{margin:0 0 12px;font-size:14px;font-weight:700}
+  .directionGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .directionCard{background:rgba(148,163,184,.06);border:1px solid var(--line);border-radius:10px;padding:12px}
+  .directionHeader{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .dirBadge{padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700;text-transform:uppercase}
+  .dirBadge.outbound{background:#06b6d4;color:#fff}
+  .dirBadge.inbound{background:#10b981;color:#fff}
+  .tripCount{font-size:12px;color:var(--muted)}
+  .directionBody{display:flex;flex-direction:column;gap:6px}
+  .dirStat{display:flex;justify-content:space-between;font-size:13px}
+  .dirStat span{color:var(--muted)}
 
   /* Chart with two lines */
   .chartLegendDir{display:flex;gap:24px;margin-top:8px;font-size:12px;font-weight:600}
@@ -304,7 +327,9 @@
     .tierBox{min-width:calc(33.33% - 8px)}
   }
   @media (max-width:900px){
-    .statsCards{grid-template-columns:1fr}
+    .statsCards{flex-direction:column}
+    .statCard.tierCard{min-width:100%}
+    .directionGrid{grid-template-columns:1fr}
     .tierBox{min-width:calc(33.33% - 8px)}
   }
   @media (max-width:600px){
@@ -316,6 +341,8 @@
     .filterBar{flex-direction:column;gap:12px;align-items:stretch}
     .filterBar .search{width:100%}
     .filterBar .routeCount{text-align:right}
+    .combinedRow{flex-direction:column;align-items:flex-start}
+    .combinedRow .statLabel{min-width:auto}
   }
 
   /* Validation column and icons */
@@ -944,6 +971,18 @@ function gapHighlightClass(gap, tier){
   const T=tierThreshold(tier); if(!Number.isFinite(T)) return '';
   if(gap>T+5) return 'gapHigh'; if(gap>T) return 'gapWarn'; return '';
 }
+// Count violations: gaps that exceed tier threshold + grace period (5 min)
+function countViolations(gaps, tier){
+  const T = tierThreshold(tier);
+  if(!Number.isFinite(T) || !gaps || !gaps.length) return { hard: 0, grace: 0 };
+  let hard = 0;  // gaps > T + 5 (fail immediately)
+  let grace = 0; // gaps > T but <= T + 5 (within grace)
+  for(const g of gaps){
+    if(g > T + 5) hard++;
+    else if(g > T) grace++;
+  }
+  return { hard, grace };
+}
 function renderGapCell(gap, tier){
   if(gap==null) return '—';
   const cls=gapHighlightClass(gap, tier);
@@ -1049,13 +1088,21 @@ function mergeRows(rows){
   const m = new Map();
   for(const r of rows){
     const key = `${r.route}::${r.day}`;
-    if(!m.has(key)) m.set(key,{route:r.route, day:r.day, dir:'–', hw:[], times:[], dirDetails:{'0':{times:[],tier:null}, '1':{times:[],tier:null}}});
+    if(!m.has(key)) m.set(key,{route:r.route, day:r.day, dir:'–', hw:[], times:[], dirDetails:{'0':{times:[],gaps:[],tier:null}, '1':{times:[],gaps:[],tier:null}}});
     const obj=m.get(key);
     obj.hw = obj.hw.concat(r.hw);
     obj.times = obj.times.concat(r.times);
-    // stash per-direction times for modal
-    if(r.dir==='0' || r.dir===0){ obj.dirDetails['0'].times = obj.dirDetails['0'].times.concat(r.times); obj.dirDetails['0'].tier = r.tier; }
-    if(r.dir==='1' || r.dir===1){ obj.dirDetails['1'].times = obj.dirDetails['1'].times.concat(r.times); obj.dirDetails['1'].tier = r.tier; }
+    // stash per-direction times and gaps for modal
+    if(r.dir==='0' || r.dir===0){
+      obj.dirDetails['0'].times = obj.dirDetails['0'].times.concat(r.times);
+      obj.dirDetails['0'].gaps = obj.dirDetails['0'].gaps.concat(r.hw);
+      obj.dirDetails['0'].tier = r.tier;
+    }
+    if(r.dir==='1' || r.dir===1){
+      obj.dirDetails['1'].times = obj.dirDetails['1'].times.concat(r.times);
+      obj.dirDetails['1'].gaps = obj.dirDetails['1'].gaps.concat(r.hw);
+      obj.dirDetails['1'].tier = r.tier;
+    }
   }
   const out=[];
   for(const [,v] of m.entries()){
@@ -1066,19 +1113,44 @@ function mergeRows(rows){
     const tier = leastWorstTier(v.hw);
     const mergedTimes=v.times.sort((a,b)=>a-b);
     const dedupTimes=[]; for(const t of mergedTimes){ if(!dedupTimes.length || dedupTimes[dedupTimes.length-1]!==t) dedupTimes.push(t); }
+
+    // Process each direction: clean times, calculate gaps with time info
     for(const dirKey of Object.keys(v.dirDetails)){
       const dirTimes=v.dirDetails[dirKey]?.times||[];
       dirTimes.sort((a,b)=>a-b);
       const cleaned=[];
       for(const t of dirTimes){ if(!cleaned.length || cleaned[cleaned.length-1]!==t) cleaned.push(t); }
       v.dirDetails[dirKey].times=cleaned;
+
+      // Calculate gaps with time info for this direction
+      const gapsWithTime = [];
+      for(let i = 1; i < cleaned.length; i++){
+        const gap = cleaned[i] - cleaned[i-1];
+        if(gap >= 5 && gap <= 240){
+          gapsWithTime.push({ gap, time: cleaned[i-1] });
+        }
+      }
+      v.dirDetails[dirKey].gapsWithTime = gapsWithTime;
+      v.dirDetails[dirKey].gaps = gapsWithTime.map(g => g.gap);
     }
-    out.push({route:v.route, dir:'–', day:v.day, b, avg, best, tier, hw:v.hw, times:dedupTimes, dirDetails:v.dirDetails});
+
+    // Find max gap location across all directions
+    let maxGapInfo = null;
+    for(const dirKey of Object.keys(v.dirDetails)){
+      const gapsWithTime = v.dirDetails[dirKey].gapsWithTime || [];
+      for(const g of gapsWithTime){
+        if(!maxGapInfo || g.gap > maxGapInfo.gap){
+          maxGapInfo = { gap: g.gap, direction: dirKey, time: g.time };
+        }
+      }
+    }
+
+    out.push({route:v.route, dir:'–', day:v.day, b, avg, best, tier, hw:v.hw, times:dedupTimes, dirDetails:v.dirDetails, maxGapInfo});
   }
   return out;
 }
 function cloneRow(r){
-  return {route:r.route, dir:r.dir, day:r.day, b:structuredClone?r.b:JSON.parse(JSON.stringify(r.b)), avg:r.avg, best:r.best, tier:r.tier, hw:[...r.hw], times:[...r.times], dirDetails:cloneDirDetails(r.dirDetails)};
+  return {route:r.route, dir:r.dir, day:r.day, b:structuredClone?r.b:JSON.parse(JSON.stringify(r.b)), avg:r.avg, best:r.best, tier:r.tier, hw:[...r.hw], times:[...r.times], dirDetails:cloneDirDetails(r.dirDetails), maxGapInfo:r.maxGapInfo ? {...r.maxGapInfo} : null};
 }
 
 // Analyze
@@ -1217,11 +1289,19 @@ async function analyze(){
 
       rows.push({route:rname, dir, day, b, avg, best, tier, hw:gaps, times:dedup});
 
-      // keep per-direction times for modal (by route+day)
+      // keep per-direction times and gaps for modal (by route+day)
       const routeDayKey=`${rname}::${day}`;
       if(!routeDayData.has(routeDayKey)) routeDayData.set(routeDayKey,{});
       const perDir=routeDayData.get(routeDayKey);
-      perDir[dir]={times:[...dedup], tier};
+      // Store gaps with time info for detailed analysis
+      const gapsWithTime = [];
+      for(let i = 1; i < dedup.length; i++){
+        const g = dedup[i] - dedup[i-1];
+        if(g >= 5 && g <= 240){
+          gapsWithTime.push({ gap: g, time: dedup[i-1] });
+        }
+      }
+      perDir[dir]={times:[...dedup], tier, gaps:[...gaps], gapsWithTime};
     }
   }
 
@@ -1270,7 +1350,12 @@ function cloneDirDetails(details){
   const result={};
   for(const key of keys){
     const src=details?.[key];
-    result[key]={ times:src?.times ? [...src.times] : [], tier:src?.tier ?? null };
+    result[key]={
+      times: src?.times ? [...src.times] : [],
+      tier: src?.tier ?? null,
+      gaps: src?.gaps ? [...src.gaps] : [],
+      gapsWithTime: src?.gapsWithTime ? src.gapsWithTime.map(g => ({...g})) : []
+    };
   }
   return result;
 }
@@ -1717,21 +1802,43 @@ function renderModalContent(){
   document.getElementById('modalTitle').innerHTML = headerHtml;
 
   const dirDetails = r.dirDetails || getDirDetails(route, day);
+  const validation = VALIDATIONS[route]?.[day];
 
   // Calculate separate direction stats
   const outboundTimes = dirDetails?.['0']?.times || [];
   const inboundTimes = dirDetails?.['1']?.times || [];
 
-  const outboundGaps = calculateGaps(outboundTimes);
-  const inboundGaps = calculateGaps(inboundTimes);
+  const outboundGaps = dirDetails?.['0']?.gaps?.length ? dirDetails['0'].gaps : calculateGaps(outboundTimes);
+  const inboundGaps = dirDetails?.['1']?.gaps?.length ? dirDetails['1'].gaps : calculateGaps(inboundTimes);
 
   const outboundAvg = outboundGaps.length ? Math.round(outboundGaps.reduce((a,b)=>a+b,0)/outboundGaps.length) : null;
   const inboundAvg = inboundGaps.length ? Math.round(inboundGaps.reduce((a,b)=>a+b,0)/inboundGaps.length) : null;
 
+  const outboundMaxGap = outboundGaps.length ? Math.max(...outboundGaps) : null;
+  const inboundMaxGap = inboundGaps.length ? Math.max(...inboundGaps) : null;
+
   const totalTrips = outboundTimes.length + inboundTimes.length;
 
-  // Calculate worst gap
+  // Calculate worst gap from pooled gaps (both directions)
   const worstGap = r.hw && r.hw.length ? Math.max(...r.hw) : null;
+
+  // Get max gap info with direction/time (from mergeRows data or calculate)
+  let maxGapInfo = r.maxGapInfo;
+  if(!maxGapInfo && worstGap !== null){
+    // Fallback: find it in dirDetails
+    for(const dirKey of ['0', '1']){
+      const gapsWithTime = dirDetails?.[dirKey]?.gapsWithTime || [];
+      for(const g of gapsWithTime){
+        if(!maxGapInfo || g.gap > maxGapInfo.gap){
+          maxGapInfo = { gap: g.gap, direction: dirKey, time: g.time };
+        }
+      }
+    }
+  }
+
+  // Count violations across ALL pooled gaps
+  const allGaps = [...outboundGaps, ...inboundGaps];
+  const violations = countViolations(allGaps, r.tier);
 
   // Build tier legend
   const tierLegendHtml = `
@@ -1770,30 +1877,62 @@ function renderModalContent(){
   const displayTierLabel = hasOverride ? tierToLabelFromValue(validation.manual_override.tier) : tierToLabel(r.tier);
   const displayTierClass = hasOverride ? tierClassFromValue(validation.manual_override.tier) : tierClass(r.tier);
 
-  // Build stats cards
+  // Format max gap location info
+  const maxGapDirLabel = maxGapInfo?.direction === '0' ? 'Outbound' : maxGapInfo?.direction === '1' ? 'Inbound' : 'Unknown';
+  const maxGapTimeStr = maxGapInfo?.time != null ? m2t(maxGapInfo.time) : '';
+
+  // Build Combined Analysis section with tier and detailed stats
   const statsCardsHtml = `
     <div class="statsCards">
-      <div class="statCard">
+      <div class="statCard tierCard">
         <div class="label">FREQUENCY TIER</div>
         <div class="value">
           <span class="tier ${displayTierClass}">${displayTierLabel}</span>
           ${hasOverride ? '<span class="overrideIndicator">(Override)</span>' : ''}
         </div>
-        ${worstGap !== null ? `<div class="subvalue">Worst gap: ${worstGap}m</div>` : ''}
         ${hasOverride ? `<div class="subvalue" style="color:var(--muted);font-style:italic">Calculated: ${tierToLabel(r.tier)}</div>` : ''}
       </div>
-      <div class="statCard">
-        <div class="label">AVG HEADWAY</div>
-        <div class="value" style="font-size:18px">
-          ${outboundAvg !== null ? `Outbound: ${outboundAvg}m` : ''}
-          ${outboundAvg !== null && inboundAvg !== null ? '<br>' : ''}
-          ${inboundAvg !== null ? `Inbound: ${inboundAvg}m` : ''}
-          ${outboundAvg === null && inboundAvg === null ? '—' : ''}
+      <div class="statCard combinedCard" style="flex:2">
+        <div class="label">COMBINED ANALYSIS (Both Directions)</div>
+        <div class="combinedStats">
+          <div class="combinedRow">
+            <span class="statLabel">Max gap:</span>
+            <span class="statValue">${worstGap !== null ? `<strong>${worstGap}m</strong>` : '—'}${maxGapInfo ? ` <span class="muted">(${maxGapDirLabel} at ${maxGapTimeStr})</span>` : ''}</span>
+          </div>
+          <div class="combinedRow">
+            <span class="statLabel">Total trips:</span>
+            <span class="statValue"><strong>${totalTrips}</strong> <span class="muted">(${outboundTimes.length} outbound, ${inboundTimes.length} inbound)</span></span>
+          </div>
+          <div class="combinedRow">
+            <span class="statLabel">Violations:</span>
+            <span class="statValue">${violations.hard > 0 ? `<span class="violationBadge hard">${violations.hard} hard</span>` : ''}${violations.grace > 0 ? `<span class="violationBadge grace">${violations.grace} grace</span>` : ''}${violations.hard === 0 && violations.grace === 0 ? '<span class="muted">None</span>' : ''}</span>
+          </div>
         </div>
       </div>
-      <div class="statCard">
-        <div class="label">TOTAL TRIPS</div>
-        <div class="value">${totalTrips}</div>
+    </div>
+    <div class="directionalStats panel">
+      <h4>Per-Direction Details</h4>
+      <div class="directionGrid">
+        <div class="directionCard">
+          <div class="directionHeader">
+            <span class="dirBadge outbound">Outbound</span>
+            <span class="tripCount">${outboundTimes.length} trips</span>
+          </div>
+          <div class="directionBody">
+            <div class="dirStat"><span>Avg headway:</span> <strong>${outboundAvg !== null ? outboundAvg + 'm' : '—'}</strong></div>
+            <div class="dirStat"><span>Max gap:</span> <strong>${outboundMaxGap !== null ? outboundMaxGap + 'm' : '—'}</strong></div>
+          </div>
+        </div>
+        <div class="directionCard">
+          <div class="directionHeader">
+            <span class="dirBadge inbound">Inbound</span>
+            <span class="tripCount">${inboundTimes.length} trips</span>
+          </div>
+          <div class="directionBody">
+            <div class="dirStat"><span>Avg headway:</span> <strong>${inboundAvg !== null ? inboundAvg + 'm' : '—'}</strong></div>
+            <div class="dirStat"><span>Max gap:</span> <strong>${inboundMaxGap !== null ? inboundMaxGap + 'm' : '—'}</strong></div>
+          </div>
+        </div>
       </div>
     </div>
   `;
@@ -1811,7 +1950,6 @@ function renderModalContent(){
   const serviceWindowsSection = buildServiceWindowsSection(r, dirDetails, true);
 
   // Build validation panel
-  const validation = VALIDATIONS[route]?.[day];
   const feedValidity = FEED_INFO?.validFrom && FEED_INFO?.validTo
     ? `${FEED_INFO.validFrom} to ${FEED_INFO.validTo}`
     : 'Unknown';
