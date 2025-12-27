@@ -349,6 +349,14 @@
   .lineageControls .checkboxLabel{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:normal;text-transform:none;cursor:pointer}
   .lineageControls input[type="checkbox"]{width:18px;height:18px;accent-color:var(--accent)}
 
+  /* Route change checkboxes */
+  .changeTypeOptions{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+  .checkboxOption{display:flex;align-items:center;gap:8px;padding:8px;border-radius:6px;cursor:pointer;transition:background .2s}
+  .checkboxOption:hover{background:rgba(59,130,246,.1)}
+  .checkboxOption input[type="checkbox"]{margin:0;cursor:pointer;width:16px;height:16px;accent-color:var(--accent)}
+  .checkboxText{font-size:13px;color:var(--text);font-weight:400}
+  .helpText{font-size:13px;color:var(--muted);margin-bottom:8px}
+
   /* Data source controls */
   .dataSourceGroup{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
   .dataSourceRadios{display:flex;gap:16px;margin-top:4px}
@@ -554,16 +562,48 @@ function saveRouteLineage(){
 }
 
 function getRouteLineage(route){
-  return ROUTE_LINEAGE[route] || {stable_id: '', comparable_to_previous: true, notes: ''};
+  return ROUTE_LINEAGE[route] || {stable_id: '', route_changes: {changes: [], comparable_to_previous: true, notes: ''}};
 }
 
 function setRouteLineage(route, lineage){
   ROUTE_LINEAGE[route] = {
     stable_id: lineage.stable_id || '',
-    comparable_to_previous: lineage.comparable_to_previous !== false,
-    notes: lineage.notes || ''
+    route_changes: {
+      changes: lineage.route_changes?.changes || [],
+      comparable_to_previous: lineage.route_changes?.comparable_to_previous !== false,
+      notes: lineage.route_changes?.notes || ''
+    }
   };
   saveRouteLineage();
+}
+
+// Route change type definitions
+const CHANGE_TYPES = [
+  {value: 'rerouted', label: 'Rerouted (different streets/corridor)'},
+  {value: 'extended', label: 'Extended (added stops at end(s))'},
+  {value: 'shortened', label: 'Shortened (removed stops)'},
+  {value: 'merged', label: 'Merged with another route'},
+  {value: 'split', label: 'Split into multiple routes'},
+  {value: 'number-changed', label: 'Route number changed (same corridor)'},
+  {value: 'frequency-only', label: 'Service frequency changed only'},
+  {value: 'discontinued', label: 'Discontinued/eliminated'},
+  {value: 'new-route', label: 'New route (first time analyzing)'}
+];
+
+const GEOGRAPHIC_CHANGES = ['rerouted', 'merged', 'split', 'shortened', 'discontinued', 'new-route'];
+
+function buildChangeTypeCheckboxes(selectedChanges){
+  return CHANGE_TYPES.map(ct => `
+    <label class="checkboxOption">
+      <input type="checkbox" name="changeType" value="${ct.value}" ${selectedChanges.includes(ct.value) ? 'checked' : ''}>
+      <span class="checkboxText">${ct.label}</span>
+    </label>
+  `).join('');
+}
+
+function determineComparability(selectedChanges){
+  const hasGeographicChange = selectedChanges.some(c => GEOGRAPHIC_CHANGES.includes(c));
+  return !hasGeographicChange;
 }
 
 // Historical data detection
@@ -618,10 +658,25 @@ function saveValidation(){
 function saveLineage(){
   const route = currentModalRoute;
   const stableId = document.getElementById('lineageStableId')?.value || '';
-  const comparable = document.getElementById('lineageComparable')?.checked !== false;
-  const notes = document.getElementById('lineageNotes')?.value || '';
 
-  setRouteLineage(route, {stable_id: stableId, comparable_to_previous: comparable, notes});
+  // Get all selected route changes
+  const selectedChanges = Array.from(
+    document.querySelectorAll('input[name="changeType"]:checked')
+  ).map(cb => cb.value);
+
+  const changeNotes = document.getElementById('routeChangeNotes')?.value || '';
+
+  // Determine comparability based on change types
+  const comparable = determineComparability(selectedChanges);
+
+  setRouteLineage(route, {
+    stable_id: stableId,
+    route_changes: {
+      changes: selectedChanges,
+      comparable_to_previous: comparable,
+      notes: changeNotes
+    }
+  });
   alert('Lineage metadata saved!');
 }
 
@@ -1615,13 +1670,15 @@ function renderModalContent(){
         <label>Stable ID (optional)</label>
         <input type="text" id="lineageStableId" placeholder="e.g., route-101-main-corridor" value="${lineage.stable_id || ''}">
 
-        <label class="checkboxLabel">
-          <input type="checkbox" id="lineageComparable" ${lineage.comparable_to_previous !== false ? 'checked' : ''}>
-          Comparable to previous check (no major route changes)
-        </label>
+        <label>Route Changes</label>
+        <p class="helpText">Has this route changed since your last analysis? (Select all that apply)</p>
 
-        <label>Route Change Notes (optional)</label>
-        <textarea id="lineageNotes" placeholder="e.g., New routing via downtown effective Jan 2025, added 3 stops" rows="2">${lineage.notes || ''}</textarea>
+        <div class="changeTypeOptions">
+          ${buildChangeTypeCheckboxes(lineage.route_changes?.changes || [])}
+        </div>
+
+        <label style="margin-top:12px">Additional details:</label>
+        <textarea id="routeChangeNotes" placeholder="e.g., Extended 2 miles north, merged with Route 5 south of downtown" rows="3">${lineage.route_changes?.notes || ''}</textarea>
 
         <button onclick="saveLineage()" class="btn">Save Lineage</button>
       </div>
@@ -1843,12 +1900,21 @@ function buildRouteExports(){
 
     // Add lineage metadata if exists
     const lineage = ROUTE_LINEAGE[routeName];
-    if(lineage && (lineage.stable_id || lineage.notes || lineage.comparable_to_previous === false)){
-      route.lineage = {
-        stable_id: lineage.stable_id || '',
-        comparable_to_previous: lineage.comparable_to_previous !== false,
-        notes: lineage.notes || ''
-      };
+    if(lineage){
+      // Include stable_id if set
+      if(lineage.stable_id){
+        route.stable_id = lineage.stable_id;
+      }
+
+      // Include route_changes if any changes selected or notes provided
+      const rc = lineage.route_changes;
+      if(rc && (rc.changes?.length > 0 || rc.notes || rc.comparable_to_previous === false)){
+        route.route_changes = {
+          changes: rc.changes || [],
+          comparable_to_previous: rc.comparable_to_previous !== false,
+          notes: rc.notes || ''
+        };
+      }
     }
 
     for(const day of ['Weekday', 'Saturday', 'Sunday']){
