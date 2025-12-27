@@ -335,6 +335,25 @@
   .feedMeta div{margin-bottom:4px}
   .feedMeta div:last-child{margin-bottom:0}
   .feedMeta strong{color:var(--text);font-weight:700}
+
+  /* Historical data banner */
+  .historicalBanner{margin-top:12px;padding:12px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);border-radius:10px;font-size:13px;color:#b45309}
+  .dark .historicalBanner{color:#fbbf24}
+
+  /* Lineage panel */
+  .lineagePanel{margin-top:16px;padding:16px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.3);border-radius:10px}
+  .lineagePanel h4{margin:0 0 12px;font-size:14px;color:var(--accent)}
+  .lineageControls{display:flex;flex-direction:column;gap:12px}
+  .lineageControls label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase}
+  .lineageControls input[type="text"],.lineageControls textarea{padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text)}
+  .lineageControls .checkboxLabel{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:normal;text-transform:none;cursor:pointer}
+  .lineageControls input[type="checkbox"]{width:18px;height:18px;accent-color:var(--accent)}
+
+  /* Data source controls */
+  .dataSourceGroup{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+  .dataSourceRadios{display:flex;gap:16px;margin-top:4px}
+  .dataSourceRadios label{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:normal;text-transform:none;cursor:pointer}
+  #sourceNotesDiv{margin-top:8px}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -371,6 +390,7 @@
         <div><strong>Valid:</strong> <span id="feedValidity"></span></div>
         <div><strong>Analyzed:</strong> <span id="analyzedTime"></span></div>
       </div>
+      <div id="historicalBanner" class="historicalBanner" style="display:none"></div>
     </section>
 
     <!-- Day Pills + Tier Summary Boxes -->
@@ -466,9 +486,11 @@
 let RAW_ROWS = []; // {route, dir, day, b, avg, tier, hw:[], times:[], dirDetails:{'0':{times:[],tier},'1':{...}} }
 let ROUTE_DATA = {}; // {routeName: {Weekday: rowData, Saturday: rowData, Sunday: rowData}}
 let activeTierFilter = null;
-let VALIDATIONS = {}; // {route: {day: {status, notes, verifiedAt, expectedTier}}}
+let VALIDATIONS = {}; // {route: {day: {status, notes, verifiedAt, expectedTier, data_source, source_notes}}}
+let ROUTE_LINEAGE = {}; // {route: {stable_id, comparable_to_previous, notes}}
 window.FEED_INFO = null;
 window.ANALYZED_AT = null;
+window.IS_HISTORICAL_DATA = false; // True if feed dates are in the past
 
 const fileEl = document.getElementById('gtfs');
 const btn = document.getElementById('go');
@@ -521,25 +543,86 @@ function loadValidations(){
   if(saved) VALIDATIONS = JSON.parse(saved);
 }
 
+// Route lineage functions
+function loadRouteLineage(){
+  const saved = localStorage.getItem('gtfs-route-lineage');
+  if(saved) ROUTE_LINEAGE = JSON.parse(saved);
+}
+
+function saveRouteLineage(){
+  localStorage.setItem('gtfs-route-lineage', JSON.stringify(ROUTE_LINEAGE));
+}
+
+function getRouteLineage(route){
+  return ROUTE_LINEAGE[route] || {stable_id: '', comparable_to_previous: true, notes: ''};
+}
+
+function setRouteLineage(route, lineage){
+  ROUTE_LINEAGE[route] = {
+    stable_id: lineage.stable_id || '',
+    comparable_to_previous: lineage.comparable_to_previous !== false,
+    notes: lineage.notes || ''
+  };
+  saveRouteLineage();
+}
+
+// Historical data detection
+function detectHistoricalData(){
+  if(!FEED_INFO?.validTo) return false;
+  const validTo = parseFeedDate(FEED_INFO.validTo);
+  if(!validTo) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return validTo < today;
+}
+
+function parseFeedDate(dateStr){
+  if(!dateStr) return null;
+  // GTFS dates are typically YYYYMMDD format
+  if(/^\d{8}$/.test(dateStr)){
+    const year = parseInt(dateStr.substr(0, 4), 10);
+    const month = parseInt(dateStr.substr(4, 2), 10) - 1;
+    const day = parseInt(dateStr.substr(6, 2), 10);
+    return new Date(year, month, day);
+  }
+  // Try standard date parsing
+  const parsed = new Date(dateStr);
+  return isNaN(parsed.getTime()) ? null : parsed;
+}
+
 function saveValidation(){
   const route = currentModalRoute;
   const day = currentModalDay;
   const status = document.getElementById('validationStatus').value;
   const notes = document.getElementById('validationNotes').value;
   const expectedTier = document.getElementById('expectedTier')?.value;
+  const dataSource = document.getElementById('dataSourceManual')?.checked ? 'manual' : 'gtfs';
+  const sourceNotes = document.getElementById('sourceNotes')?.value || '';
 
   if(!VALIDATIONS[route]) VALIDATIONS[route] = {};
   VALIDATIONS[route][day] = {
     status,
     notes,
     verifiedAt: new Date().toISOString(),
-    expectedTier: status === 'incorrect' ? expectedTier : null
+    expectedTier: status === 'incorrect' ? expectedTier : null,
+    data_source: dataSource,
+    source_notes: dataSource === 'manual' ? sourceNotes : ''
   };
 
   localStorage.setItem('gtfs-validations', JSON.stringify(VALIDATIONS));
   render(); // Refresh table to show new validation status
   renderModalContent(); // Refresh modal to show updated validation
   alert('Validation saved!');
+}
+
+function saveLineage(){
+  const route = currentModalRoute;
+  const stableId = document.getElementById('lineageStableId')?.value || '';
+  const comparable = document.getElementById('lineageComparable')?.checked !== false;
+  const notes = document.getElementById('lineageNotes')?.value || '';
+
+  setRouteLineage(route, {stable_id: stableId, comparable_to_previous: comparable, notes});
+  alert('Lineage metadata saved!');
 }
 
 function getValidationIcon(route, day){
@@ -556,8 +639,15 @@ function toggleExpectedTierDiv(){
   if(div) div.style.display = status === 'incorrect' ? 'block' : 'none';
 }
 
-// Load validations on page load
+function toggleSourceNotes(){
+  const manualRadio = document.getElementById('dataSourceManual');
+  const div = document.getElementById('sourceNotesDiv');
+  if(div) div.style.display = manualRadio?.checked ? 'block' : 'none';
+}
+
+// Load validations and lineage on page load
 loadValidations();
+loadRouteLineage();
 
 // Day pill clicks
 let currentSortDay = 'Weekday';
@@ -989,6 +1079,19 @@ async function analyze(){
       : 'Unknown';
   document.getElementById('analyzedTime').textContent = new Date(ANALYZED_AT).toLocaleString();
   document.getElementById('feedMetadata').style.display = 'block';
+
+  // Detect and display historical data warning
+  window.IS_HISTORICAL_DATA = detectHistoricalData();
+  const historicalBanner = document.getElementById('historicalBanner');
+  if(historicalBanner){
+    if(window.IS_HISTORICAL_DATA){
+      historicalBanner.style.display = 'block';
+      const validTo = FEED_INFO.validTo || 'Unknown';
+      historicalBanner.innerHTML = `<strong>Historical Data:</strong> This GTFS feed expired on ${validTo}. Results reflect past service patterns.`;
+    } else {
+      historicalBanner.style.display = 'none';
+    }
+  }
 
   // Show export button
   document.getElementById('exportBtn').style.display = 'inline-block';
@@ -1453,6 +1556,9 @@ function renderModalContent(){
   const analyzedAt = ANALYZED_AT ? new Date(ANALYZED_AT).toLocaleString() : 'Unknown';
   const verifiedAt = validation?.verifiedAt ? new Date(validation.verifiedAt).toLocaleString() : 'Not verified';
 
+  // Get lineage data for this route
+  const lineage = getRouteLineage(route);
+
   const validationPanelHtml = `
     <div class="validationPanel panel">
       <h4>Validation Status</h4>
@@ -1480,6 +1586,18 @@ function renderModalContent(){
           </select>
         </div>
 
+        <div class="dataSourceGroup">
+          <label>Data Source</label>
+          <div class="dataSourceRadios">
+            <label><input type="radio" name="dataSource" id="dataSourceGtfs" value="gtfs" ${!validation?.data_source || validation?.data_source === 'gtfs' ? 'checked' : ''} onchange="toggleSourceNotes()"> GTFS Feed</label>
+            <label><input type="radio" name="dataSource" id="dataSourceManual" value="manual" ${validation?.data_source === 'manual' ? 'checked' : ''} onchange="toggleSourceNotes()"> Manual Entry</label>
+          </div>
+          <div id="sourceNotesDiv" style="display:${validation?.data_source === 'manual' ? 'block' : 'none'}">
+            <label>Source Notes</label>
+            <textarea id="sourceNotes" placeholder="e.g., Data entered from PDF timetable, agency website, etc." rows="2">${validation?.source_notes || ''}</textarea>
+          </div>
+        </div>
+
         <button onclick="saveValidation()" class="btn">Save Validation</button>
       </div>
 
@@ -1487,6 +1605,25 @@ function renderModalContent(){
         <div><strong>Feed validity:</strong> <span id="modalFeedValidity">${feedValidity}</span></div>
         <div><strong>Analyzed:</strong> <span id="modalAnalyzedAt">${analyzedAt}</span></div>
         <div><strong>Last verified:</strong> <span id="verifiedAt">${verifiedAt}</span></div>
+        ${window.IS_HISTORICAL_DATA ? '<div style="color:#f59e0b;font-weight:700">This is historical data (feed has expired)</div>' : ''}
+      </div>
+    </div>
+
+    <div class="lineagePanel">
+      <h4>Route Lineage Metadata</h4>
+      <div class="lineageControls">
+        <label>Stable ID (optional)</label>
+        <input type="text" id="lineageStableId" placeholder="e.g., route-101-main-corridor" value="${lineage.stable_id || ''}">
+
+        <label class="checkboxLabel">
+          <input type="checkbox" id="lineageComparable" ${lineage.comparable_to_previous !== false ? 'checked' : ''}>
+          Comparable to previous check (no major route changes)
+        </label>
+
+        <label>Route Change Notes (optional)</label>
+        <textarea id="lineageNotes" placeholder="e.g., New routing via downtown effective Jan 2025, added 3 stops" rows="2">${lineage.notes || ''}</textarea>
+
+        <button onclick="saveLineage()" class="btn">Save Lineage</button>
       </div>
     </div>
   `;
@@ -1652,11 +1789,12 @@ function exportResults(){
   if(!agencyName) return;
 
   const data = {
-    schema_version: '1.0',
+    schema_version: '1.1',
 
     check: {
       id: `${agency}_${new Date().toISOString().split('T')[0]}`,
-      created_at: ANALYZED_AT
+      created_at: ANALYZED_AT,
+      is_historical: window.IS_HISTORICAL_DATA || false
     },
 
     agency: {
@@ -1703,6 +1841,16 @@ function buildRouteExports(){
       route_name: routeName
     };
 
+    // Add lineage metadata if exists
+    const lineage = ROUTE_LINEAGE[routeName];
+    if(lineage && (lineage.stable_id || lineage.notes || lineage.comparable_to_previous === false)){
+      route.lineage = {
+        stable_id: lineage.stable_id || '',
+        comparable_to_previous: lineage.comparable_to_previous !== false,
+        notes: lineage.notes || ''
+      };
+    }
+
     for(const day of ['Weekday', 'Saturday', 'Sunday']){
       const dayData = ROUTE_DATA[routeName][day];
       if(!dayData) continue;
@@ -1724,7 +1872,9 @@ function buildRouteExports(){
           status: validation.status,
           verified_at: validation.verifiedAt,
           notes: validation.notes,
-          expected_tier: validation.expectedTier
+          expected_tier: validation.expectedTier,
+          data_source: validation.data_source || 'gtfs',
+          source_notes: validation.source_notes || ''
         };
       }
     }
