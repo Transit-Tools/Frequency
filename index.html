@@ -362,6 +362,84 @@
   .dataSourceRadios{display:flex;gap:16px;margin-top:4px}
   .dataSourceRadios label{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:normal;text-transform:none;cursor:pointer}
   #sourceNotesDiv{margin-top:8px}
+
+  /* Tier Reference Legend */
+  .tierReference{
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 12px;
+    background: rgba(148,163,184,.06);
+    border-radius: 8px;
+    margin-bottom: 16px;
+    border: 1px solid var(--line);
+  }
+  .tierItem{
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tierBadgeLegend{
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    min-width: 40px;
+    text-align: center;
+    color: #fff;
+  }
+  .tierDesc{
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .tierNote{
+    width: 100%;
+    font-size: 11px;
+    color: var(--muted);
+    font-style: italic;
+    margin-top: 4px;
+  }
+
+  /* Manual Override Section */
+  .overrideSection{
+    margin-bottom: 12px;
+    padding: 12px;
+    background: rgba(59,130,246,.08);
+    border: 1px solid rgba(59,130,246,.3);
+    border-radius: 8px;
+  }
+  .overrideLabel{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-transform: none;
+  }
+  .overrideLabel input[type="checkbox"]{
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+  }
+  .tierSelect{
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel);
+    color: var(--text);
+    margin-top: 4px;
+  }
+  .overrideIndicator{
+    display: inline-block;
+    font-size: 10px;
+    color: var(--muted);
+    font-style: italic;
+    margin-left: 4px;
+  }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -639,6 +717,16 @@ function saveValidation(){
   const dataSource = document.getElementById('dataSourceManual')?.checked ? 'manual' : 'gtfs';
   const sourceNotes = document.getElementById('sourceNotes')?.value || '';
 
+  // Check for manual override
+  const hasOverride = document.getElementById('manualOverride')?.checked;
+  const manualTier = document.getElementById('manualTier')?.value;
+  const overrideReason = document.getElementById('overrideReason')?.value || '';
+
+  if(hasOverride && !manualTier){
+    alert('Please select a tier for manual override');
+    return;
+  }
+
   if(!VALIDATIONS[route]) VALIDATIONS[route] = {};
   VALIDATIONS[route][day] = {
     status,
@@ -648,6 +736,14 @@ function saveValidation(){
     data_source: dataSource,
     source_notes: dataSource === 'manual' ? sourceNotes : ''
   };
+
+  // Add manual override if checked
+  if(hasOverride && manualTier){
+    VALIDATIONS[route][day].manual_override = {
+      tier: manualTier,
+      reason: overrideReason
+    };
+  }
 
   localStorage.setItem('gtfs-validations', JSON.stringify(VALIDATIONS));
   render(); // Refresh table to show new validation status
@@ -698,6 +794,22 @@ function toggleSourceNotes(){
   const manualRadio = document.getElementById('dataSourceManual');
   const div = document.getElementById('sourceNotesDiv');
   if(div) div.style.display = manualRadio?.checked ? 'block' : 'none';
+}
+
+function toggleManualOverride(){
+  const checkbox = document.getElementById('manualOverride');
+  const selectDiv = document.getElementById('manualTierSelect');
+  if(selectDiv){
+    selectDiv.style.display = checkbox?.checked ? 'block' : 'none';
+  }
+
+  // If unchecking, clear selections
+  if(!checkbox?.checked){
+    const tierSelect = document.getElementById('manualTier');
+    const reasonTextarea = document.getElementById('overrideReason');
+    if(tierSelect) tierSelect.value = '';
+    if(reasonTextarea) reasonTextarea.value = '';
+  }
 }
 
 // Load validations and lineage on page load
@@ -1191,12 +1303,15 @@ function render(opts={}){
   let routes = Object.keys(ROUTE_DATA);
   if(q) routes = routes.filter(r => r.toLowerCase().includes(q));
 
-  // Count tiers based on sortDay
+  // Count tiers based on sortDay (use override tier if present)
   const tierCounts = {'10':0, '15':0, '20':0, '30':0, '60':0, '>60':0};
   for(const route of routes){
     const dayData = ROUTE_DATA[route][sortDay];
     if(dayData){
-      tierCounts[dayData.tier] = (tierCounts[dayData.tier] || 0) + 1;
+      const validation = VALIDATIONS[route]?.[sortDay];
+      const hasOverride = validation?.manual_override;
+      const tier = hasOverride ? tierValueToStandard(validation.manual_override.tier) : dayData.tier;
+      tierCounts[tier] = (tierCounts[tier] || 0) + 1;
     }
   }
 
@@ -1206,19 +1321,29 @@ function render(opts={}){
     box.querySelector('.tierCount').textContent = tierCounts[tier] || 0;
   });
 
-  // Filter by tier if active
+  // Filter by tier if active (use override tier if present)
   if(activeTierFilter){
     routes = routes.filter(route => {
       const dayData = ROUTE_DATA[route][sortDay];
-      return dayData && dayData.tier === activeTierFilter;
+      if(!dayData) return false;
+      const validation = VALIDATIONS[route]?.[sortDay];
+      const hasOverride = validation?.manual_override;
+      const tier = hasOverride ? tierValueToStandard(validation.manual_override.tier) : dayData.tier;
+      return tier === activeTierFilter;
     });
   }
 
-  // Sort routes by tier quality for sortDay, then alphabetically
+  // Sort routes by tier quality for sortDay, then alphabetically (use override tier if present)
   const tierOrder = {'10':0, '15':1, '20':2, '30':3, '60':4, '>60':5};
   routes.sort((a, b) => {
-    const tierA = ROUTE_DATA[a][sortDay]?.tier || '>60';
-    const tierB = ROUTE_DATA[b][sortDay]?.tier || '>60';
+    const dayDataA = ROUTE_DATA[a][sortDay];
+    const dayDataB = ROUTE_DATA[b][sortDay];
+    const validationA = VALIDATIONS[a]?.[sortDay];
+    const validationB = VALIDATIONS[b]?.[sortDay];
+    const hasOverrideA = validationA?.manual_override;
+    const hasOverrideB = validationB?.manual_override;
+    const tierA = hasOverrideA ? tierValueToStandard(validationA.manual_override.tier) : (dayDataA?.tier || '>60');
+    const tierB = hasOverrideB ? tierValueToStandard(validationB.manual_override.tier) : (dayDataB?.tier || '>60');
     if(tierOrder[tierA] !== tierOrder[tierB]){
       return tierOrder[tierA] - tierOrder[tierB];
     }
@@ -1251,9 +1376,16 @@ function render(opts={}){
 
       if(dayData){
         const headway = dayData.avg || 0;
-        const tier = dayData.tier;
-        const tierLabel = tierToLabel(tier);
-        cell.innerHTML = `<span class="headway">${headway}m</span><span class="tierBadge ${tierClass(tier)}">${tierLabel}</span>`;
+        const validation = VALIDATIONS[route]?.[day];
+        const hasOverride = validation?.manual_override;
+
+        // Use override tier if present
+        const displayTier = hasOverride ? validation.manual_override.tier : dayData.tier;
+        const tierLabel = hasOverride ? tierToLabelFromValue(displayTier) : tierToLabel(dayData.tier);
+        const tierCls = hasOverride ? tierClassFromValue(displayTier) : tierClass(dayData.tier);
+        const overrideIndicator = hasOverride ? '<span class="overrideIndicator">*</span>' : '';
+
+        cell.innerHTML = `<span class="headway">${headway}m</span><span class="tierBadge ${tierCls}">${tierLabel}</span>${overrideIndicator}`;
         cell.style.cursor = 'pointer';
         cell.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -1336,6 +1468,40 @@ function tierToLabel(tier){
   if(tier === '30') return 'Basic';
   if(tier === '60') return 'Infreq';
   return 'Sparse';
+}
+
+// Helper functions for manual override tier values
+function tierToLabelFromValue(tierValue){
+  // Map override dropdown values to labels
+  if(tierValue === '10') return 'Freq+';
+  if(tierValue === 'freq') return 'Freq';
+  if(tierValue === 'good') return 'Good';
+  if(tierValue === 'basic') return 'Basic';
+  if(tierValue === '60') return 'Infreq';
+  if(tierValue === 'infreq') return 'Sparse';
+  return tierValue;
+}
+
+function tierClassFromValue(tierValue){
+  // Map override dropdown values to CSS classes
+  if(tierValue === '10') return 't10';
+  if(tierValue === 'freq') return 't15';
+  if(tierValue === 'good') return 't20';
+  if(tierValue === 'basic') return 't30';
+  if(tierValue === '60') return 't60';
+  if(tierValue === 'infreq') return 'tBig';
+  return 'tBig';
+}
+
+function tierValueToStandard(tierValue){
+  // Map override dropdown values to standard tier values for export
+  if(tierValue === '10') return '10';
+  if(tierValue === 'freq') return '15';
+  if(tierValue === 'good') return '20';
+  if(tierValue === 'basic') return '30';
+  if(tierValue === '60') return '60';
+  if(tierValue === 'infreq') return '>60';
+  return tierValue;
 }
 
 // Modal (Departures & Gaps)
@@ -1567,13 +1733,54 @@ function renderModalContent(){
   // Calculate worst gap
   const worstGap = r.hw && r.hw.length ? Math.max(...r.hw) : null;
 
+  // Build tier legend
+  const tierLegendHtml = `
+    <div class="tierReference">
+      <div class="tierItem">
+        <span class="tierBadgeLegend tier10">10</span>
+        <span class="tierDesc">≤10 min</span>
+      </div>
+      <div class="tierItem">
+        <span class="tierBadgeLegend tier15">Freq</span>
+        <span class="tierDesc">≤15 min</span>
+      </div>
+      <div class="tierItem">
+        <span class="tierBadgeLegend tier20">Good</span>
+        <span class="tierDesc">≤20 min</span>
+      </div>
+      <div class="tierItem">
+        <span class="tierBadgeLegend tier30">Basic</span>
+        <span class="tierDesc">≤30 min</span>
+      </div>
+      <div class="tierItem">
+        <span class="tierBadgeLegend tier60">60</span>
+        <span class="tierDesc">≤60 min</span>
+      </div>
+      <div class="tierItem">
+        <span class="tierBadgeLegend tierBig">Infreq</span>
+        <span class="tierDesc">>60 min</span>
+      </div>
+      <small class="tierNote">+5 min grace, max 2 violations</small>
+    </div>
+  `;
+
+  // Check for manual override
+  const hasOverride = validation?.manual_override;
+  const displayTier = hasOverride ? validation.manual_override.tier : r.tier;
+  const displayTierLabel = hasOverride ? tierToLabelFromValue(validation.manual_override.tier) : tierToLabel(r.tier);
+  const displayTierClass = hasOverride ? tierClassFromValue(validation.manual_override.tier) : tierClass(r.tier);
+
   // Build stats cards
   const statsCardsHtml = `
     <div class="statsCards">
       <div class="statCard">
         <div class="label">FREQUENCY TIER</div>
-        <div class="value"><span class="tier ${tierClass(r.tier)}">${tierToLabel(r.tier)}</span></div>
+        <div class="value">
+          <span class="tier ${displayTierClass}">${displayTierLabel}</span>
+          ${hasOverride ? '<span class="overrideIndicator">(Override)</span>' : ''}
+        </div>
         ${worstGap !== null ? `<div class="subvalue">Worst gap: ${worstGap}m</div>` : ''}
+        ${hasOverride ? `<div class="subvalue" style="color:var(--muted);font-style:italic">Calculated: ${tierToLabel(r.tier)}</div>` : ''}
       </div>
       <div class="statCard">
         <div class="label">AVG HEADWAY</div>
@@ -1617,6 +1824,31 @@ function renderModalContent(){
   const validationPanelHtml = `
     <div class="validationPanel panel">
       <h4>Validation Status</h4>
+
+      <div class="overrideSection">
+        <label class="overrideLabel">
+          <input type="checkbox" id="manualOverride" ${validation?.manual_override ? 'checked' : ''} onchange="toggleManualOverride()">
+          <span>Manual Override</span>
+        </label>
+
+        <div id="manualTierSelect" style="display:${validation?.manual_override ? 'block' : 'none'};margin-top:8px">
+          <label>Correct tier (overrides calculation):</label>
+          <select id="manualTier" class="tierSelect">
+            <option value="">-- Select tier --</option>
+            <option value="10" ${validation?.manual_override?.tier === '10' ? 'selected' : ''}>10 (≤10 min)</option>
+            <option value="freq" ${validation?.manual_override?.tier === 'freq' ? 'selected' : ''}>Freq (≤15 min)</option>
+            <option value="good" ${validation?.manual_override?.tier === 'good' ? 'selected' : ''}>Good (≤20 min)</option>
+            <option value="basic" ${validation?.manual_override?.tier === 'basic' ? 'selected' : ''}>Basic (≤30 min)</option>
+            <option value="60" ${validation?.manual_override?.tier === '60' ? 'selected' : ''}>60 (≤60 min)</option>
+            <option value="infreq" ${validation?.manual_override?.tier === 'infreq' ? 'selected' : ''}>Infreq (>60 min)</option>
+          </select>
+
+          <label style="margin-top:8px">Why override?</label>
+          <textarea id="overrideReason" placeholder="e.g., GTFS data doesn't match PDF schedule - actual service is every 15 min" rows="2">${validation?.manual_override?.reason || ''}</textarea>
+        </div>
+      </div>
+
+      <div class="divider" style="margin: 12px 0; border-top: 1px solid var(--line);"></div>
 
       <div class="validationControls">
         <label>Status</label>
@@ -1687,6 +1919,7 @@ function renderModalContent(){
 
   const body = document.getElementById('modalBody');
   body.innerHTML = `
+    ${tierLegendHtml}
     ${statsCardsHtml}
     ${validationPanelHtml}
     ${chartSection}
@@ -1922,8 +2155,18 @@ function buildRouteExports(){
       if(!dayData) continue;
 
       const dayKey = day.toLowerCase();
+      const validation = VALIDATIONS[routeName]?.[day];
+      const override = validation?.manual_override;
+
+      // Calculate calculated tier and determine final tier
+      const calculatedTier = dayData.tier;
+      const finalTier = override?.tier ? tierValueToStandard(override.tier) : calculatedTier;
+
       route[dayKey] = {
-        tier: dayData.tier,
+        tier: finalTier,
+        calculated_tier: calculatedTier,
+        is_override: !!override,
+        override_reason: override?.reason || '',
         avg_headway: dayData.avg,
         best_headway: dayData.best,
         max_gap: Math.max(...dayData.hw),
@@ -1932,7 +2175,6 @@ function buildRouteExports(){
       };
 
       // Include validation if exists
-      const validation = VALIDATIONS[routeName]?.[day];
       if(validation){
         route[dayKey].validation = {
           status: validation.status,
