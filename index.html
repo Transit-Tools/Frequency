@@ -467,6 +467,210 @@
     font-style: italic;
     margin-left: 4px;
   }
+
+  /* 5-column stats row */
+  .statsRow{
+    display: grid;
+    grid-template-columns: 100px 140px 1fr 160px 160px;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .statsRow .statCard{
+    padding: 12px;
+    margin: 0;
+  }
+  .statsRow .tierCard{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .statsRow .tierCard .tier{
+    font-size: 16px;
+  }
+  .statsRow .legendCard{
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    justify-content: center;
+  }
+  .legendCard .tierExplain{
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .legendCard .tierExplain .tierBadgeSmall{
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .tierBadgeSmall.t10, .tierBadgeSmall.tier10{background:#10b981}
+  .tierBadgeSmall.t15, .tierBadgeSmall.tier15{background:#22c55e}
+  .tierBadgeSmall.t20, .tierBadgeSmall.tier20{background:#06b6d4}
+  .tierBadgeSmall.t30, .tierBadgeSmall.tier30{background:#eab308}
+  .tierBadgeSmall.t60, .tierBadgeSmall.tier60{background:#ef4444}
+  .tierBadgeSmall.tBig, .tierBadgeSmall.tierBig{background:#6b7280}
+  .legendCard .tierExplain .tierThreshold{
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .legendCard .tierNote{
+    font-size: 10px;
+    color: var(--muted);
+    font-style: italic;
+  }
+  .statsRow .analysisCard .combinedStats{
+    font-size: 13px;
+  }
+  .statsRow .analysisCard .combinedRow{
+    margin-bottom: 4px;
+  }
+  .statsRow .dirCard{
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .statsRow .dirCard .dirHeader{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .statsRow .dirCard .dirBadgeSmall{
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #fff;
+  }
+  .statsRow .dirCard .dirBadgeSmall.outbound{background:#06b6d4}
+  .statsRow .dirCard .dirBadgeSmall.inbound{background:#10b981}
+  .statsRow .dirCard .tripCountSmall{
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .statsRow .dirCard .dirStatRow{
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+  }
+  .statsRow .dirCard .dirStatRow span{
+    color: var(--muted);
+  }
+  @media (max-width:1100px){
+    .statsRow{
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .statsRow .analysisCard{
+      grid-column: span 2;
+    }
+  }
+  @media (max-width:600px){
+    .statsRow{
+      grid-template-columns: 1fr;
+    }
+    .statsRow .analysisCard{
+      grid-column: span 1;
+    }
+  }
+
+  /* Modal grid layout with sidebar */
+  .modalGrid{
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+  }
+  .modalMain{
+    min-width: 0;
+  }
+  .modalSidebar{
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .modalSidebar .validationPanel,
+  .modalSidebar .lineagePanel{
+    margin: 0;
+    padding: 12px;
+  }
+  .modalSidebar .validationPanel h4,
+  .modalSidebar .lineagePanel h4{
+    margin: 0 0 10px;
+    font-size: 13px;
+  }
+  .modalSidebar .validationControls{
+    gap: 8px;
+  }
+  .modalSidebar .validationControls label{
+    font-size: 11px;
+  }
+  .modalSidebar .validationControls select,
+  .modalSidebar .validationControls textarea,
+  .modalSidebar .lineageControls input,
+  .modalSidebar .lineageControls textarea{
+    padding: 6px;
+    font-size: 12px;
+  }
+  .modalSidebar .btn{
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  @media (max-width:900px){
+    .modalGrid{
+      grid-template-columns: 1fr;
+    }
+    .modalSidebar{
+      order: 10;
+    }
+  }
+
+  /* Side-by-side charts and gap distribution */
+  .chartsRow{
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .chartsRow .chartSection{
+    margin: 0;
+  }
+  .chartsRow .gapDistribution{
+    margin: 0;
+  }
+  @media (max-width:900px){
+    .chartsRow{
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Toggle buttons for route changes */
+  .changeButtons{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .changeBtn{
+    padding: 6px 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--panel);
+    color: var(--text);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .changeBtn:hover{
+    background: rgba(59,130,246,.1);
+    border-color: #3b82f6;
+  }
+  .changeBtn.active{
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+  }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -698,12 +902,13 @@ const CHANGE_TYPES = [
 const GEOGRAPHIC_CHANGES = ['rerouted', 'merged', 'split', 'shortened', 'discontinued', 'new-route'];
 
 function buildChangeTypeCheckboxes(selectedChanges){
-  return CHANGE_TYPES.map(ct => `
-    <label class="checkboxOption">
-      <input type="checkbox" name="changeType" value="${ct.value}" ${selectedChanges.includes(ct.value) ? 'checked' : ''}>
-      <span class="checkboxText">${ct.label}</span>
-    </label>
-  `).join('');
+  return `<div class="changeButtons">
+    ${CHANGE_TYPES.map(ct => `
+      <button type="button" class="changeBtn ${selectedChanges.includes(ct.value) ? 'active' : ''}" data-change="${ct.value}" onclick="this.classList.toggle('active')">
+        ${ct.label}
+      </button>
+    `).join('')}
+  </div>`;
 }
 
 function determineComparability(selectedChanges){
@@ -782,10 +987,10 @@ function saveLineage(){
   const route = currentModalRoute;
   const stableId = document.getElementById('lineageStableId')?.value || '';
 
-  // Get all selected route changes
+  // Get all selected route changes (from toggle buttons)
   const selectedChanges = Array.from(
-    document.querySelectorAll('input[name="changeType"]:checked')
-  ).map(cb => cb.value);
+    document.querySelectorAll('.changeBtn.active')
+  ).map(btn => btn.dataset.change);
 
   const changeNotes = document.getElementById('routeChangeNotes')?.value || '';
 
@@ -1789,7 +1994,7 @@ function renderModalContent(){
   const headerHtml = `
     <div class="modalRouteHeader">
       <span class="modalRouteBadge">${route}</span>
-      <span class="modalRouteName">Route ${route}</span>
+      <span class="modalRouteName">${route}</span>
     </div>
     <div class="modalTimeRange">Analysis ${t0} - ${t1}</div>
     <div class="modalDayTabs">
@@ -1840,37 +2045,6 @@ function renderModalContent(){
   const allGaps = [...outboundGaps, ...inboundGaps];
   const violations = countViolations(allGaps, r.tier);
 
-  // Build tier legend
-  const tierLegendHtml = `
-    <div class="tierReference">
-      <div class="tierItem">
-        <span class="tierBadgeLegend tier10">10</span>
-        <span class="tierDesc">≤10 min</span>
-      </div>
-      <div class="tierItem">
-        <span class="tierBadgeLegend tier15">Freq</span>
-        <span class="tierDesc">≤15 min</span>
-      </div>
-      <div class="tierItem">
-        <span class="tierBadgeLegend tier20">Good</span>
-        <span class="tierDesc">≤20 min</span>
-      </div>
-      <div class="tierItem">
-        <span class="tierBadgeLegend tier30">Basic</span>
-        <span class="tierDesc">≤30 min</span>
-      </div>
-      <div class="tierItem">
-        <span class="tierBadgeLegend tier60">60</span>
-        <span class="tierDesc">≤60 min</span>
-      </div>
-      <div class="tierItem">
-        <span class="tierBadgeLegend tierBig">Infreq</span>
-        <span class="tierDesc">>60 min</span>
-      </div>
-      <small class="tierNote">+5 min grace, max 2 violations</small>
-    </div>
-  `;
-
   // Check for manual override
   const hasOverride = validation?.manual_override;
   const displayTier = hasOverride ? validation.manual_override.tier : r.tier;
@@ -1881,19 +2055,33 @@ function renderModalContent(){
   const maxGapDirLabel = maxGapInfo?.direction === '0' ? 'Outbound' : maxGapInfo?.direction === '1' ? 'Inbound' : 'Unknown';
   const maxGapTimeStr = maxGapInfo?.time != null ? m2t(maxGapInfo.time) : '';
 
-  // Build Combined Analysis section with tier and detailed stats
+  // Get threshold for current tier
+  const tierThresholds = {
+    't10': '≤10 min', 'tier10': '≤10 min',
+    't15': '≤15 min', 'tier15': '≤15 min',
+    't20': '≤20 min', 'tier20': '≤20 min',
+    't30': '≤30 min', 'tier30': '≤30 min',
+    't60': '≤60 min', 'tier60': '≤60 min',
+    'tBig': '>60 min', 'tierBig': '>60 min'
+  };
+  const currentTierThreshold = tierThresholds[displayTierClass] || '';
+
+  // Build 5-column stats row: Tier | Legend | Analysis | Outbound | Inbound
   const statsCardsHtml = `
-    <div class="statsCards">
+    <div class="statsRow">
       <div class="statCard tierCard">
-        <div class="label">FREQUENCY TIER</div>
-        <div class="value">
-          <span class="tier ${displayTierClass}">${displayTierLabel}</span>
-          ${hasOverride ? '<span class="overrideIndicator">(Override)</span>' : ''}
-        </div>
-        ${hasOverride ? `<div class="subvalue" style="color:var(--muted);font-style:italic">Calculated: ${tierToLabel(r.tier)}</div>` : ''}
+        <span class="tier ${displayTierClass}">${displayTierLabel}</span>
+        ${hasOverride ? '<div class="overrideIndicator">(Override)</div>' : ''}
       </div>
-      <div class="statCard combinedCard" style="flex:2">
-        <div class="label">COMBINED ANALYSIS (Both Directions)</div>
+      <div class="statCard legendCard">
+        <div class="tierExplain">
+          <span class="tierBadgeSmall ${displayTierClass}">${displayTierLabel}</span>
+          <span class="tierThreshold">${currentTierThreshold}</span>
+        </div>
+        <div class="tierNote">+5 min grace, max 2 violations</div>
+      </div>
+      <div class="statCard analysisCard">
+        <div class="label" style="margin-bottom:8px">COMBINED ANALYSIS</div>
         <div class="combinedStats">
           <div class="combinedRow">
             <span class="statLabel">Max gap:</span>
@@ -1901,7 +2089,7 @@ function renderModalContent(){
           </div>
           <div class="combinedRow">
             <span class="statLabel">Total trips:</span>
-            <span class="statValue"><strong>${totalTrips}</strong> <span class="muted">(${outboundTimes.length} outbound, ${inboundTimes.length} inbound)</span></span>
+            <span class="statValue"><strong>${totalTrips}</strong> <span class="muted">(${outboundTimes.length} out, ${inboundTimes.length} in)</span></span>
           </div>
           <div class="combinedRow">
             <span class="statLabel">Violations:</span>
@@ -1909,30 +2097,21 @@ function renderModalContent(){
           </div>
         </div>
       </div>
-    </div>
-    <div class="directionalStats panel">
-      <h4>Per-Direction Details</h4>
-      <div class="directionGrid">
-        <div class="directionCard">
-          <div class="directionHeader">
-            <span class="dirBadge outbound">Outbound</span>
-            <span class="tripCount">${outboundTimes.length} trips</span>
-          </div>
-          <div class="directionBody">
-            <div class="dirStat"><span>Avg headway:</span> <strong>${outboundAvg !== null ? outboundAvg + 'm' : '—'}</strong></div>
-            <div class="dirStat"><span>Max gap:</span> <strong>${outboundMaxGap !== null ? outboundMaxGap + 'm' : '—'}</strong></div>
-          </div>
+      <div class="statCard dirCard">
+        <div class="dirHeader">
+          <span class="dirBadgeSmall outbound">Outbound</span>
+          <span class="tripCountSmall">${outboundTimes.length} trips</span>
         </div>
-        <div class="directionCard">
-          <div class="directionHeader">
-            <span class="dirBadge inbound">Inbound</span>
-            <span class="tripCount">${inboundTimes.length} trips</span>
-          </div>
-          <div class="directionBody">
-            <div class="dirStat"><span>Avg headway:</span> <strong>${inboundAvg !== null ? inboundAvg + 'm' : '—'}</strong></div>
-            <div class="dirStat"><span>Max gap:</span> <strong>${inboundMaxGap !== null ? inboundMaxGap + 'm' : '—'}</strong></div>
-          </div>
+        <div class="dirStatRow"><span>Avg headway:</span> <strong>${outboundAvg !== null ? outboundAvg + 'm' : '—'}</strong></div>
+        <div class="dirStatRow"><span>Max gap:</span> <strong>${outboundMaxGap !== null ? outboundMaxGap + 'm' : '—'}</strong></div>
+      </div>
+      <div class="statCard dirCard">
+        <div class="dirHeader">
+          <span class="dirBadgeSmall inbound">Inbound</span>
+          <span class="tripCountSmall">${inboundTimes.length} trips</span>
         </div>
+        <div class="dirStatRow"><span>Avg headway:</span> <strong>${inboundAvg !== null ? inboundAvg + 'm' : '—'}</strong></div>
+        <div class="dirStatRow"><span>Max gap:</span> <strong>${inboundMaxGap !== null ? inboundMaxGap + 'm' : '—'}</strong></div>
       </div>
     </div>
   `;
@@ -2042,10 +2221,7 @@ function renderModalContent(){
 
         <label>Route Changes</label>
         <p class="helpText">Has this route changed since your last analysis? (Select all that apply)</p>
-
-        <div class="changeTypeOptions">
-          ${buildChangeTypeCheckboxes(lineage.route_changes?.changes || [])}
-        </div>
+        ${buildChangeTypeCheckboxes(lineage.route_changes?.changes || [])}
 
         <label style="margin-top:12px">Additional details:</label>
         <textarea id="routeChangeNotes" placeholder="e.g., Extended 2 miles north, merged with Route 5 south of downtown" rows="3">${lineage.route_changes?.notes || ''}</textarea>
@@ -2057,16 +2233,23 @@ function renderModalContent(){
 
   const body = document.getElementById('modalBody');
   body.innerHTML = `
-    ${tierLegendHtml}
     ${statsCardsHtml}
-    ${validationPanelHtml}
-    ${chartSection}
-    ${gapDistSection}
-    <div class="compactDepartures">
-      <h4>Departure Times</h4>
-      ${departuresSection}
+    <div class="modalGrid">
+      <div class="modalMain">
+        <div class="chartsRow">
+          ${chartSection}
+          ${gapDistSection}
+        </div>
+        <div class="compactDepartures">
+          <h4>Departure Times</h4>
+          ${departuresSection}
+        </div>
+        ${serviceWindowsSection}
+      </div>
+      <div class="modalSidebar">
+        ${validationPanelHtml}
+      </div>
     </div>
-    ${serviceWindowsSection}
   `;
 }
 
