@@ -240,11 +240,9 @@
   .daySelector select{background:var(--panel);border:1px solid var(--line);color:var(--text);padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600}
   .filterRow{display:flex;gap:12px;align-items:stretch;flex-wrap:wrap}
   .dayPills{display:flex;gap:8px;flex-shrink:0}
-  .dayPill{background:var(--panel);border:2px solid var(--line);color:var(--text);padding:10px 16px;border-radius:10px;cursor:pointer;font-weight:700;transition:all .2s;min-width:90px;text-align:center}
+  .dayPill{background:var(--panel);border:2px solid var(--line);color:var(--text);padding:12px 18px;border-radius:10px;cursor:pointer;font-weight:700;font-size:13px;transition:all .2s;min-width:90px;text-align:center}
   .dayPill:hover{border-color:var(--accent)}
-  .dayPill.active{background:var(--btn);border-color:var(--btn);color:#fff}
-  .dayPillLabel{font-size:10px;font-weight:700;letter-spacing:.04em;opacity:.7;text-transform:uppercase;margin-bottom:2px}
-  .dayPillValue{font-size:15px;font-weight:800}
+  .dayPill.active{box-shadow:0 0 0 3px var(--accent)}
   .filterMessage{margin-top:14px;font-size:13px;color:var(--muted)}
   .filterMessage strong{color:var(--text);font-weight:700}
   .filterBar{display:flex;align-items:center;justify-content:space-between;margin-top:14px}
@@ -762,18 +760,9 @@
     <section id="tierSummary" class="panel" style="display:none">
       <div class="filterRow">
         <div class="dayPills">
-          <button class="dayPill active" data-day="Weekday" type="button">
-            <div class="dayPillLabel">SORTING BY</div>
-            <div class="dayPillValue">Weekday</div>
-          </button>
-          <button class="dayPill" data-day="Saturday" type="button">
-            <div class="dayPillLabel">SATURDAY</div>
-            <div class="dayPillValue">Select</div>
-          </button>
-          <button class="dayPill" data-day="Sunday" type="button">
-            <div class="dayPillLabel">SUNDAY</div>
-            <div class="dayPillValue">Select</div>
-          </button>
+          <button class="dayPill active" data-day="Weekday" type="button">Weekday</button>
+          <button class="dayPill" data-day="Saturday" type="button">Saturday</button>
+          <button class="dayPill" data-day="Sunday" type="button">Sunday</button>
         </div>
         <div class="tierBoxes">
           <button class="tierBox tier10" data-tier="10" type="button">
@@ -1105,17 +1094,7 @@ document.querySelectorAll('.dayPill').forEach(pill => {
 
     // Update active state
     document.querySelectorAll('.dayPill').forEach(p => {
-      p.classList.remove('active');
-      const label = p.querySelector('.dayPillLabel');
-      const value = p.querySelector('.dayPillValue');
-      if(p.dataset.day === day){
-        p.classList.add('active');
-        label.textContent = 'SORTING BY';
-        value.textContent = day;
-      } else {
-        label.textContent = p.dataset.day.toUpperCase();
-        value.textContent = 'Select';
-      }
+      p.classList.toggle('active', p.dataset.day === day);
     });
 
     // Update filter message
