@@ -34,6 +34,7 @@
   }
   .wrap{max-width:1300px;margin:0 auto;padding:20px;display:flex;flex-direction:column;min-height:100vh}
   header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap}
+  .headerActions{display:flex;gap:8px;align-items:center}
   h1{font-size:20px;margin:0;font-weight:800;letter-spacing:.2px}
   .panel{background:var(--panel); border:1px solid var(--line); border-radius:14px; box-shadow: 0 2px 8px rgba(0,0,0,.04); padding:16px; margin-bottom:12px}
   .dark .panel{box-shadow: 0 6px 20px rgba(0,0,0,.15)}
@@ -268,6 +269,8 @@
   .routeCount{font-size:13px;color:var(--muted);font-weight:500}
   .routeCount strong{color:var(--text);font-weight:700}
   .routeTable{width:100%}
+  .routeTable th.modeCol{width:100px;text-align:center}
+  .routeTable td.modeCol{text-align:center;font-size:12px;color:var(--text);font-weight:600}
   .routeTable th.dayCol{width:20%}
   .routeTable td.dayCell{font-family:ui-monospace,monospace}
   .routeTable th.numCol{width:60px;text-align:center}
@@ -360,14 +363,18 @@
   .historicalBanner{margin-top:12px;padding:12px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);border-radius:10px;font-size:13px;color:#b45309}
   .dark .historicalBanner{color:#fbbf24}
 
-  /* Lineage panel */
-  .lineagePanel{margin-top:16px;padding:16px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.3);border-radius:10px}
-  .lineagePanel h4{margin:0 0 12px;font-size:14px;color:var(--accent)}
-  .lineageControls{display:flex;flex-direction:column;gap:12px}
-  .lineageControls label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase}
-  .lineageControls input[type="text"],.lineageControls textarea{padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text)}
-  .lineageControls .checkboxLabel{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:normal;text-transform:none;cursor:pointer}
-  .lineageControls input[type="checkbox"]{width:18px;height:18px;accent-color:var(--accent)}
+  /* New verification panel styles */
+  .verificationSection{margin-bottom:16px}
+  .verificationSection label{display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+  .verificationSection textarea{width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text);resize:vertical}
+  .btnGroup{display:flex;gap:6px}
+  .btnGroupWrap{flex-wrap:wrap}
+  .verifyBtn{flex:1;min-width:0;padding:8px 12px;background:var(--panel);color:var(--text);border:2px solid var(--line);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center}
+  .verifyBtn:hover{border-color:var(--accent);background:rgba(59,130,246,.1)}
+  .verifyBtn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .validationMeta{font-size:11px;color:var(--muted);line-height:1.6;padding-top:12px;border-top:1px solid var(--line)}
+  .validationMeta div{margin-bottom:4px}
+  .validationMeta strong{color:var(--text);font-weight:600}
 
   /* Route change checkboxes */
   .changeTypeOptions{display:flex;flex-direction:column;gap:4px;margin-top:8px}
@@ -609,52 +616,33 @@
     min-width: 0;
   }
   .modalSidebar{
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 12px;
     position: sticky;
     top: 20px;
     align-items: start;
   }
-  .modalSidebar .validationPanel,
-  .modalSidebar .lineagePanel{
+  .modalSidebar .validationPanel{
     margin: 0;
     padding: 12px;
+    width: 100%;
   }
-  .modalSidebar .validationPanel h4,
-  .modalSidebar .lineagePanel h4{
-    margin: 0 0 10px;
-    font-size: 13px;
-  }
-  .modalSidebar .validationControls{
-    gap: 8px;
-  }
-  .modalSidebar .validationControls label{
-    font-size: 11px;
-  }
-  .modalSidebar .validationControls select,
-  .modalSidebar .validationControls textarea,
-  .modalSidebar .lineageControls input,
-  .modalSidebar .lineageControls textarea{
-    padding: 6px;
-    font-size: 12px;
+  .modalSidebar .validationPanel h4{
+    margin: 0 0 14px;
+    font-size: 14px;
+    font-weight: 800;
   }
   .modalSidebar .btn{
-    padding: 8px 12px;
-    font-size: 12px;
+    padding: 10px 14px;
+    font-size: 13px;
   }
   @media (max-width:1100px){
     .modalGrid{
       grid-template-columns: 1fr;
     }
     .modalSidebar{
-      grid-template-columns: 1fr 1fr;
       order: 10;
-    }
-  }
-  @media (max-width:700px){
-    .modalSidebar{
-      grid-template-columns: 1fr;
     }
   }
 
@@ -727,30 +715,47 @@
   <div class="wrap">
     <header>
       <h1>🚌 GTFS Frequency Screener</h1>
-      <button id="theme" class="btn btnTheme" type="button" title="Toggle theme">🌙</button>
-    </header>
-
-    <section id="controlsPanel" class="panel">
-      <div class="uploadRow">
+      <div class="headerActions">
         <div class="fileBtn">
           <label for="gtfs" class="btn btnUpload">Upload GTFS</label>
           <input id="gtfs" type="file" accept=".zip" style="display:none">
-          <span id="fname" class="fileName"></span>
-        </div>
-        <div class="timeRange">
-          <span>TIME</span>
-          <input id="t0" type="time" value="07:00">
-          <span>—</span>
-          <input id="t1" type="time" value="22:00">
         </div>
         <button id="go" class="btn btnAction" type="button" disabled>Analyze</button>
         <button id="exportBtn" class="btn btnAction" style="display:none" onclick="exportResults()">Export</button>
+        <button id="theme" class="btn btnTheme" type="button" title="Toggle theme">🌙</button>
       </div>
+    </header>
+
+    <section id="controlsPanel" class="panel" style="display:none">
       <div id="rangeMessage" class="rangeMessage" role="status" aria-live="polite"></div>
       <!-- Hidden merge checkbox - default on -->
       <input id="merge" type="checkbox" checked style="display:none">
       <div id="historicalBanner" class="historicalBanner" style="display:none"></div>
+      <div id="filenameDisplay" class="fileName" style="margin-top:8px"></div>
     </section>
+
+    <!-- Time filter settings modal -->
+    <div id="timeSettingsModal" class="modal" style="display:none">
+      <div class="dialog" style="max-width:400px">
+        <div class="dialogHeader">
+          <h3>Time Filter Settings</h3>
+          <button class="close" onclick="closeTimeSettings()">✕</button>
+        </div>
+        <div class="dialogBody">
+          <div class="timeRange" style="flex-direction:column;gap:12px">
+            <div class="field">
+              <label>Start Time</label>
+              <input id="t0" type="time" value="07:00">
+            </div>
+            <div class="field">
+              <label>End Time</label>
+              <input id="t1" type="time" value="22:00">
+            </div>
+            <button class="btn" onclick="applyTimeSettings()">Apply & Re-analyze</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Day Pills + Tier Summary Boxes -->
     <section id="tierSummary" class="panel" style="display:none">
@@ -788,7 +793,7 @@
         </div>
       </div>
       <div class="filterMessage">
-        Showing all routes for <strong id="sortDayLabel">Weekday</strong>. Click a frequency box above to filter.
+        Showing all routes for <strong id="sortDayLabel">Weekday</strong> <span id="timeRangeLabel"></span>. Click a frequency box above to filter.
       </div>
       <div class="filterBar">
         <div id="feedMetadata" class="feedMetaInline" style="display:none">
@@ -801,6 +806,7 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-opacity=".5" stroke-width="2" d="m21 21-4.35-4.35M10 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z"/></svg>
             <input id="q" placeholder="Filter by route name...">
           </div>
+          <button id="timeSettingsBtn" class="btn btnTheme" type="button" title="Time filter settings" onclick="openTimeSettings()">⚙️</button>
           <span class="routeCount">Displaying <strong>0</strong> routes</span>
         </div>
       </div>
@@ -813,6 +819,7 @@
           <thead>
             <tr>
               <th class="route">ROUTE</th>
+              <th class="modeCol">MODE</th>
               <th class="dayCol">WEEKDAY</th>
               <th class="dayCol">SATURDAY</th>
               <th class="dayCol">SUNDAY</th>
@@ -842,6 +849,7 @@
 <script>
 let RAW_ROWS = []; // {route, dir, day, b, avg, tier, hw:[], times:[], dirDetails:{'0':{times:[],tier},'1':{...}} }
 let ROUTE_DATA = {}; // {routeName: {Weekday: rowData, Saturday: rowData, Sunday: rowData}}
+let ROUTE_MODES = {}; // {routeName: mode} - detected from route_type
 let activeTierFilter = null;
 let VALIDATIONS = {}; // {route: {day: {status, notes, verifiedAt, expectedTier, data_source, source_notes}}}
 let ROUTE_LINEAGE = {}; // {route: {stable_id, comparable_to_previous, notes}}
@@ -859,16 +867,72 @@ function formatGtfsDate(dateStr){
   return date.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
 }
 
+// Detect mode from GTFS route_type
+function detectMode(route_type, routeName){
+  const type = route_type ? String(route_type).trim() : '';
+  const name = (routeName || '').toLowerCase();
+
+  // route_type 0 = Tram/Light rail
+  if(type === '0') return 'LRT';
+
+  // route_type 1 = Subway/Metro (Heavy Rail)
+  if(type === '1') return 'Heavy Rail';
+
+  // route_type 2 = Rail (Commuter Rail)
+  if(type === '2') return 'Commuter Rail';
+
+  // route_type 3 = Bus - check name for BRT indicators
+  if(type === '3'){
+    if(name.includes('rapid') || name.includes('express') || name.includes('brt') || name.includes('bus rapid')){
+      return 'BRT';
+    }
+    return 'Bus';
+  }
+
+  // route_type 4 = Ferry
+  if(type === '4') return 'Ferry';
+
+  // route_type 5 = Cable tram
+  if(type === '5') return 'Cable Car';
+
+  // route_type 6 = Aerial lift/Gondola
+  if(type === '6') return 'Gondola';
+
+  // route_type 7 = Funicular
+  if(type === '7') return 'Funicular';
+
+  // Default to Bus if unknown
+  return 'Bus';
+}
+
 const fileEl = document.getElementById('gtfs');
 const btn = document.getElementById('go');
-const fname = document.getElementById('fname');
 
 // File selection via label click
 fileEl.addEventListener('change', ()=>{
   btn.disabled = !(fileEl.files && fileEl.files.length>0);
-  fname.textContent = fileEl.files?.[0]?.name || '';
+  const filenameDisplay = document.getElementById('filenameDisplay');
+  if(filenameDisplay){
+    filenameDisplay.textContent = fileEl.files?.[0]?.name ? `File: ${fileEl.files[0].name}` : '';
+    document.getElementById('controlsPanel').style.display = fileEl.files?.[0] ? 'block' : 'none';
+  }
 });
 btn.addEventListener('click', analyze);
+
+// Time settings modal functions
+function openTimeSettings(){
+  document.getElementById('timeSettingsModal').style.display = 'flex';
+}
+function closeTimeSettings(){
+  document.getElementById('timeSettingsModal').style.display = 'none';
+}
+function applyTimeSettings(){
+  closeTimeSettings();
+  // Re-trigger analysis if data exists
+  if(RAW_ROWS.length > 0){
+    analyze();
+  }
+}
 
 function setupResultsSizing(){
   updateResultsMaxHeight();
@@ -982,11 +1046,95 @@ function parseFeedDate(dateStr){
   return isNaN(parsed.getTime()) ? null : parsed;
 }
 
+// New verification panel interaction functions
+function selectSource(source){
+  document.querySelectorAll('[data-source]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.source === source);
+  });
+}
+
+function toggleAttribute(attr){
+  const btn = document.querySelector(`[data-attr="${attr}"]`);
+  if(btn) btn.classList.toggle('active');
+}
+
+function selectStatus(status){
+  document.querySelectorAll('[data-status]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.status === status);
+  });
+  // Show/hide frequency section if status is 'incorrect'
+  const frequencySection = document.getElementById('frequencySection');
+  if(frequencySection){
+    frequencySection.style.display = status === 'incorrect' ? 'block' : 'none';
+  }
+}
+
+function selectFrequency(freq){
+  document.querySelectorAll('[data-freq]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.freq === freq);
+  });
+}
+
+function saveVerification(){
+  const route = currentModalRoute;
+  const day = currentModalDay;
+
+  // Get source
+  const sourceBtn = document.querySelector('[data-source].active');
+  const dataSource = sourceBtn?.dataset.source || 'gtfs';
+
+  // Get attributes
+  const attributeBtns = document.querySelectorAll('[data-attr].active');
+  const attributes = Array.from(attributeBtns).map(btn => btn.dataset.attr);
+
+  // Get status
+  const statusBtn = document.querySelector('[data-status].active');
+  const status = statusBtn?.dataset.status || 'unverified';
+
+  // Get frequency (if status is incorrect)
+  let expectedFreq = null;
+  if(status === 'incorrect'){
+    const freqBtn = document.querySelector('[data-freq].active');
+    expectedFreq = freqBtn?.dataset.freq || null;
+  }
+
+  // Get notes
+  const notes = document.getElementById('validationNotes')?.value || '';
+
+  // Save validation data
+  if(!VALIDATIONS[route]) VALIDATIONS[route] = {};
+  VALIDATIONS[route][day] = {
+    status,
+    notes,
+    verifiedAt: new Date().toISOString(),
+    expectedFreq,
+    data_source: dataSource
+  };
+
+  // Save lineage/attributes data
+  if(!ROUTE_LINEAGE[route]) ROUTE_LINEAGE[route] = {};
+  if(!ROUTE_LINEAGE[route].route_changes) ROUTE_LINEAGE[route].route_changes = {};
+  ROUTE_LINEAGE[route].route_changes.changes = attributes;
+
+  // Persist to localStorage
+  localStorage.setItem('gtfs-validations', JSON.stringify(VALIDATIONS));
+  saveRouteLineage();
+
+  // Re-render modal to show updated state
+  renderModalContent();
+
+  // Re-render table to update validation icons
+  render();
+
+  alert('Verification saved successfully!');
+}
+
+// Legacy saveValidation function (kept for compatibility, redirects to new function)
 function saveValidation(){
   const route = currentModalRoute;
   const day = currentModalDay;
-  const status = document.getElementById('validationStatus').value;
-  const notes = document.getElementById('validationNotes').value;
+  const status = document.getElementById('validationStatus')?.value || 'unverified';
+  const notes = document.getElementById('validationNotes')?.value || '';
   const expectedTier = document.getElementById('expectedTier')?.value;
   const dataSource = document.getElementById('dataSourceManual')?.checked ? 'manual' : 'gtfs';
   const sourceNotes = document.getElementById('sourceNotes')?.value || '';
@@ -1105,6 +1253,14 @@ document.querySelectorAll('.dayPill').forEach(pill => {
     // Update filter message
     const sortDayLabel = document.getElementById('sortDayLabel');
     if(sortDayLabel) sortDayLabel.textContent = day;
+
+    // Update time range label
+    const timeRangeLabel = document.getElementById('timeRangeLabel');
+    if(timeRangeLabel){
+      const t0 = document.getElementById('t0').value || '07:00';
+      const t1 = document.getElementById('t1').value || '22:00';
+      timeRangeLabel.textContent = `(${t0} - ${t1})`;
+    }
 
     render();
   });
@@ -1498,6 +1654,12 @@ async function analyze(){
       const rt=routeById[route_id]||{};
       const rname=rt.route_short_name||rt.route_long_name||route_id;
 
+      // Detect and store mode for this route
+      if(!ROUTE_MODES[rname]){
+        const mode = detectMode(rt.route_type, rname);
+        ROUTE_MODES[rname] = mode;
+      }
+
       const times=[];
       for(const tid of tripIds){
         const m=originForTrip.get(tid);
@@ -1655,26 +1817,42 @@ function render(opts={}){
     });
   }
 
-  // Sort routes by tier quality for sortDay, then alphabetically (use override tier if present)
-  const tierOrder = {'10':0, '15':1, '20':2, '30':3, '60':4, '>60':5};
-  routes.sort((a, b) => {
-    const dayDataA = ROUTE_DATA[a][sortDay];
-    const dayDataB = ROUTE_DATA[b][sortDay];
-    const validationA = VALIDATIONS[a]?.[sortDay];
-    const validationB = VALIDATIONS[b]?.[sortDay];
-    const hasOverrideA = validationA?.manual_override;
-    const hasOverrideB = validationB?.manual_override;
-    const tierA = hasOverrideA ? tierValueToStandard(validationA.manual_override.tier) : (dayDataA?.tier || '>60');
-    const tierB = hasOverrideB ? tierValueToStandard(validationB.manual_override.tier) : (dayDataB?.tier || '>60');
-    if(tierOrder[tierA] !== tierOrder[tierB]){
-      return tierOrder[tierA] - tierOrder[tierB];
+  // Natural sort function for route names (handles numbers properly)
+  function naturalSort(a, b){
+    // Extract leading numbers if present
+    const aMatch = a.match(/^(\d+)/);
+    const bMatch = b.match(/^(\d+)/);
+
+    if(aMatch && bMatch){
+      const aNum = parseInt(aMatch[1], 10);
+      const bNum = parseInt(bMatch[1], 10);
+      if(aNum !== bNum) return aNum - bNum;
+      // If numbers are equal, fall back to string comparison
+      return a.localeCompare(b);
     }
-    return a.localeCompare(b, undefined, {numeric: true});
-  });
+
+    // If one has a number and the other doesn't, number comes first
+    if(aMatch) return -1;
+    if(bMatch) return 1;
+
+    // Otherwise, normal string comparison
+    return a.localeCompare(b);
+  }
+
+  // Sort routes: alphabetically/numerically only (no tier-based sorting)
+  routes.sort(naturalSort);
 
   // Update route count
   const routeCountEl = document.querySelector('.routeCount');
   if(routeCountEl) routeCountEl.innerHTML = `Displaying <strong>${routes.length}</strong> routes`;
+
+  // Update time range label
+  const timeRangeLabel = document.getElementById('timeRangeLabel');
+  if(timeRangeLabel){
+    const t0 = document.getElementById('t0').value || '07:00';
+    const t1 = document.getElementById('t1').value || '22:00';
+    timeRangeLabel.textContent = `(${t0} - ${t1})`;
+  }
 
   // Build table with 3-day columns
   const tbody = document.querySelector('#tbl tbody');
@@ -1689,6 +1867,12 @@ function render(opts={}){
     routeCell.className = 'route';
     routeCell.textContent = route;
     tr.appendChild(routeCell);
+
+    // Mode cell
+    const modeCell = document.createElement('td');
+    modeCell.className = 'modeCol';
+    modeCell.textContent = ROUTE_MODES[route] || 'Bus';
+    tr.appendChild(modeCell);
 
     // Day cells
     for(const day of ['Weekday', 'Saturday', 'Sunday']){
@@ -2166,95 +2350,64 @@ function renderModalContent(){
   // Get lineage data for this route
   const lineage = getRouteLineage(route);
 
+  // Get lineage attributes
+  const attributes = lineage.route_changes?.changes || [];
+
   const validationPanelHtml = `
     <div class="validationPanel panel">
-      <h4>Validation Status</h4>
+      <h4>Verification</h4>
 
-      <div class="overrideSection">
-        <label class="overrideLabel">
-          <input type="checkbox" id="manualOverride" ${validation?.manual_override ? 'checked' : ''} onchange="toggleManualOverride()">
-          <span>Manual Override</span>
-        </label>
-
-        <div id="manualTierSelect" style="display:${validation?.manual_override ? 'block' : 'none'};margin-top:8px">
-          <label>Correct tier (overrides calculation):</label>
-          <select id="manualTier" class="tierSelect">
-            <option value="">-- Select tier --</option>
-            <option value="10" ${validation?.manual_override?.tier === '10' ? 'selected' : ''}>10 (≤10 min)</option>
-            <option value="freq" ${validation?.manual_override?.tier === 'freq' ? 'selected' : ''}>Freq (≤15 min)</option>
-            <option value="good" ${validation?.manual_override?.tier === 'good' ? 'selected' : ''}>Good (≤20 min)</option>
-            <option value="basic" ${validation?.manual_override?.tier === 'basic' ? 'selected' : ''}>Basic (≤30 min)</option>
-            <option value="60" ${validation?.manual_override?.tier === '60' ? 'selected' : ''}>60 (≤60 min)</option>
-            <option value="infreq" ${validation?.manual_override?.tier === 'infreq' ? 'selected' : ''}>Infreq (>60 min)</option>
-          </select>
-
-          <label style="margin-top:8px">Why override?</label>
-          <textarea id="overrideReason" placeholder="e.g., GTFS data doesn't match PDF schedule - actual service is every 15 min" rows="2">${validation?.manual_override?.reason || ''}</textarea>
+      <div class="verificationSection">
+        <label>SOURCE</label>
+        <div class="btnGroup">
+          <button class="verifyBtn ${(!validation?.data_source || validation?.data_source === 'gtfs') ? 'active' : ''}" data-source="gtfs" onclick="selectSource('gtfs')">GTFS</button>
+          <button class="verifyBtn ${validation?.data_source === 'pdf' ? 'active' : ''}" data-source="pdf" onclick="selectSource('pdf')">PDF</button>
+          <button class="verifyBtn ${validation?.data_source === 'manual' ? 'active' : ''}" data-source="manual" onclick="selectSource('manual')">Manual</button>
         </div>
       </div>
 
-      <div class="divider" style="margin: 12px 0; border-top: 1px solid var(--line);"></div>
-
-      <div class="validationControls">
-        <label>Status</label>
-        <select id="validationStatus" onchange="toggleExpectedTierDiv()">
-          <option value="unverified" ${!validation || validation.status === 'unverified' ? 'selected' : ''}>? Unverified</option>
-          <option value="correct" ${validation?.status === 'correct' ? 'selected' : ''}>✓ Correct</option>
-          <option value="incorrect" ${validation?.status === 'incorrect' ? 'selected' : ''}>✗ Incorrect</option>
-        </select>
-
-        <label>Notes</label>
-        <textarea id="validationNotes" placeholder="e.g., Checked against Jan 2025 PDF schedule" rows="3">${validation?.notes || ''}</textarea>
-
-        <div id="incorrectTierDiv" style="display:${validation?.status === 'incorrect' ? 'block' : 'none'}">
-          <label>Expected Tier (if incorrect)</label>
-          <select id="expectedTier">
-            <option value="10" ${validation?.expectedTier === '10' ? 'selected' : ''}>Freq+ (≤10 min)</option>
-            <option value="15" ${validation?.expectedTier === '15' ? 'selected' : ''}>Freq (≤15 min)</option>
-            <option value="20" ${validation?.expectedTier === '20' ? 'selected' : ''}>Good (≤20 min)</option>
-            <option value="30" ${validation?.expectedTier === '30' ? 'selected' : ''}>Basic (≤30 min)</option>
-            <option value="60" ${validation?.expectedTier === '60' ? 'selected' : ''}>Infreq (≤60 min)</option>
-            <option value=">60" ${validation?.expectedTier === '>60' ? 'selected' : ''}>Sparse (>60 min)</option>
-          </select>
+      <div class="verificationSection">
+        <label>ATTRIBUTES</label>
+        <div class="btnGroup btnGroupWrap">
+          <button class="verifyBtn ${attributes.includes('branches') ? 'active' : ''}" data-attr="branches" onclick="toggleAttribute('branches')">Branches</button>
+          <button class="verifyBtn ${attributes.includes('short-turns') ? 'active' : ''}" data-attr="short-turns" onclick="toggleAttribute('short-turns')">Short-Turns</button>
+          <button class="verifyBtn ${attributes.includes('discontinued') ? 'active' : ''}" data-attr="discontinued" onclick="toggleAttribute('discontinued')">Discontinued</button>
         </div>
-
-        <div class="dataSourceGroup">
-          <label>Data Source</label>
-          <div class="dataSourceRadios">
-            <label><input type="radio" name="dataSource" id="dataSourceGtfs" value="gtfs" ${!validation?.data_source || validation?.data_source === 'gtfs' ? 'checked' : ''} onchange="toggleSourceNotes()"> GTFS Feed</label>
-            <label><input type="radio" name="dataSource" id="dataSourceManual" value="manual" ${validation?.data_source === 'manual' ? 'checked' : ''} onchange="toggleSourceNotes()"> Manual Entry</label>
-          </div>
-          <div id="sourceNotesDiv" style="display:${validation?.data_source === 'manual' ? 'block' : 'none'}">
-            <label>Source Notes</label>
-            <textarea id="sourceNotes" placeholder="e.g., Data entered from PDF timetable, agency website, etc." rows="2">${validation?.source_notes || ''}</textarea>
-          </div>
-        </div>
-
-        <button onclick="saveValidation()" class="btn">Save Validation</button>
       </div>
 
-      <div class="validationMeta">
+      <div class="verificationSection">
+        <label>STATUS</label>
+        <div class="btnGroup">
+          <button class="verifyBtn ${validation?.status === 'correct' ? 'active' : ''}" data-status="correct" onclick="selectStatus('correct')">✓ Correct</button>
+          <button class="verifyBtn ${validation?.status === 'incorrect' ? 'active' : ''}" data-status="incorrect" onclick="selectStatus('incorrect')">✗ Incorrect</button>
+          <button class="verifyBtn ${!validation || validation.status === 'unverified' ? 'active' : ''}" data-status="unverified" onclick="selectStatus('unverified')">? Needs Verification</button>
+        </div>
+      </div>
+
+      <div id="frequencySection" class="verificationSection" style="display:${validation?.status === 'incorrect' ? 'block' : 'none'}">
+        <label>FREQUENCY (if incorrect)</label>
+        <div class="btnGroup btnGroupWrap">
+          <button class="verifyBtn ${validation?.expectedFreq === '10' ? 'active' : ''}" data-freq="10" onclick="selectFrequency('10')">10</button>
+          <button class="verifyBtn ${validation?.expectedFreq === '15' ? 'active' : ''}" data-freq="15" onclick="selectFrequency('15')">15</button>
+          <button class="verifyBtn ${validation?.expectedFreq === '20' ? 'active' : ''}" data-freq="20" onclick="selectFrequency('20')">20</button>
+          <button class="verifyBtn ${validation?.expectedFreq === '30' ? 'active' : ''}" data-freq="30" onclick="selectFrequency('30')">30</button>
+          <button class="verifyBtn ${validation?.expectedFreq === '60' ? 'active' : ''}" data-freq="60" onclick="selectFrequency('60')">60</button>
+          <button class="verifyBtn ${validation?.expectedFreq === 'longer' ? 'active' : ''}" data-freq="longer" onclick="selectFrequency('longer')">Longer</button>
+        </div>
+      </div>
+
+      <div class="verificationSection">
+        <label>NOTES</label>
+        <textarea id="validationNotes" placeholder="e.g., Checked against Jan 2025 PDF schedule" rows="4">${validation?.notes || ''}</textarea>
+      </div>
+
+      <button onclick="saveVerification()" class="btn" style="width:100%">Save</button>
+
+      <div class="validationMeta" style="margin-top:12px">
         <div><strong>Feed validity:</strong> <span id="modalFeedValidity">${feedValidity}</span></div>
         <div><strong>Analyzed:</strong> <span id="modalAnalyzedAt">${analyzedAt}</span></div>
         <div><strong>Last verified:</strong> <span id="verifiedAt">${verifiedAt}</span></div>
         ${window.IS_HISTORICAL_DATA ? '<div style="color:#f59e0b;font-weight:700">This is historical data (feed has expired)</div>' : ''}
-      </div>
-    </div>
-
-    <div class="lineagePanel">
-      <h4>Route Lineage Metadata</h4>
-      <div class="lineageControls">
-        <label>Stable ID (optional)</label>
-        <input type="text" id="lineageStableId" placeholder="e.g., route-101-main-corridor" value="${lineage.stable_id || ''}">
-
-        <label>Route Changes</label>
-        <p class="helpText">Has this route changed since your last analysis? (Select all that apply)</p>
-        ${buildChangeTypeCheckboxes(lineage.route_changes?.changes || [])}
-
-        <label style="margin-top:12px">Additional details:</label>
-        <textarea id="routeChangeNotes" placeholder="e.g., Extended 2 miles north, merged with Route 5 south of downtown" rows="3">${lineage.route_changes?.notes || ''}</textarea>
-
-        <button onclick="saveLineage()" class="btn">Save Lineage</button>
       </div>
     </div>
   `;
@@ -2477,7 +2630,8 @@ function buildRouteExports(){
   for(const routeName of Object.keys(ROUTE_DATA)){
     const route = {
       route_id: routeName,
-      route_name: routeName
+      route_name: routeName,
+      mode: ROUTE_MODES[routeName] || 'Bus'
     };
 
     // Add lineage metadata if exists
