@@ -106,7 +106,7 @@
 
   /* Modal */
   .modal{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.6); z-index:100}
-  .dialog{background:var(--panel); border:1px solid var(--line); border-radius:16px; width:min(90vw,800px); max-height:85vh; display:flex; flex-direction:column; padding:16px}
+  .dialog{background:var(--panel); border:1px solid var(--line); border-radius:16px; width:min(90vw,1200px); max-height:85vh; display:flex; flex-direction:column; padding:16px}
   .dialogHeader{flex-shrink:0; display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px}
   .dialog h3{margin:0}
   .dialog pre{display:none}
@@ -608,7 +608,7 @@
   /* Modal grid layout with sidebar */
   .modalGrid{
     display: grid;
-    grid-template-columns: 1fr 560px;
+    grid-template-columns: 1fr 450px;
     gap: 16px;
     align-items: start;
   }
@@ -649,7 +649,7 @@
   /* Side-by-side charts and gap distribution */
   .chartsRow{
     display: grid;
-    grid-template-columns: 1fr 372px;
+    grid-template-columns: 1fr;
     gap: 12px;
     margin-bottom: 16px;
     align-items: stretch;
@@ -2457,7 +2457,7 @@ function buildDirectionalChart(dirDetails, tier){
   if(outboundTimes.length < 2 && inboundTimes.length < 2) return '<p class="muted">Not enough data for chart</p>';
 
   // Chart dimensions
-  const width = 850, height = 200, padL = 50, padR = 20, padT = 25, padB = 40;
+  const width = 680, height = 200, padL = 50, padR = 20, padT = 25, padB = 40;
   const chartW = width - padL - padR;
   const chartH = height - padT - padB;
 
