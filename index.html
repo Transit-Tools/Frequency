@@ -106,7 +106,7 @@
 
   /* Modal */
   .modal{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.6); z-index:100}
-  .dialog{background:var(--panel); border:1px solid var(--line); border-radius:16px; width:min(90vw,1200px); max-height:85vh; display:flex; flex-direction:column; padding:16px}
+  .dialog{background:var(--panel); border:1px solid var(--line); border-radius:16px; width:min(90vw,900px); max-height:85vh; display:flex; flex-direction:column; padding:16px}
   .dialogHeader{flex-shrink:0; display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px}
   .dialog h3{margin:0}
   .dialog pre{display:none}
@@ -114,7 +114,7 @@
   .dialogTab{background:transparent;border:0;border-bottom:2px solid transparent;color:var(--muted);padding:8px 16px;cursor:pointer;font-weight:600;font-size:13px;transition:all .2s}
   .dialogTab.active{color:var(--accent);border-bottom-color:var(--accent)}
   .dialogTab:hover{color:var(--text)}
-  .dialogBody{flex:1; overflow-y:auto; max-height:calc(80vh - 60px); padding-right:8px}
+  .dialogBody{flex:1; overflow-y:auto; overflow-x:hidden; max-height:calc(80vh - 60px); padding-right:8px}
   .tabContent{display:none}
   .tabContent.active{display:block}
   .close{background:transparent; border:1px solid var(--line); color:var(--chipText); border-radius:8px; padding:6px 10px; cursor:pointer}
@@ -471,8 +471,8 @@
   /* 4-column stats row: Frequency | Analysis | Outbound | Inbound */
   .statsRow{
     display: grid;
-    grid-template-columns: 160px 1fr 180px 180px;
-    gap: 12px;
+    grid-template-columns: 140px 1fr 150px 150px;
+    gap: 10px;
     margin-bottom: 16px;
   }
   .statsRow .statCard{
@@ -608,12 +608,13 @@
   /* Modal grid layout with sidebar */
   .modalGrid{
     display: grid;
-    grid-template-columns: 1fr 450px;
+    grid-template-columns: 1fr 360px;
     gap: 16px;
     align-items: start;
   }
   .modalMain{
     min-width: 0;
+    overflow-x: hidden;
   }
   .modalSidebar{
     display: flex;
