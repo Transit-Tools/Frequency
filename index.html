@@ -664,13 +664,28 @@
     grid-template-columns: 2fr 1fr;
     gap: 16px;
     margin-bottom: 16px;
-    align-items: end;
+    align-items: stretch;
   }
   .chartsRow .chartSection{
     margin: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .chartsRow .chartSection .chartContainer{
+    flex: 1;
+    display: flex;
+    flex-direction: column;
   }
   .chartsRow .gapDistribution{
     margin: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .chartsRow .gapDistribution .gapDistContainer{
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
   @media (max-width:900px){
     .chartsRow{
