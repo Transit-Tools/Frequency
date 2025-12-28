@@ -279,10 +279,10 @@
 
   /* Modal improvements */
   .modalRouteHeader{display:flex;align-items:center;gap:16px;margin-bottom:4px}
-  .modalRouteBadge{background:var(--accent);color:#fff;font-size:18px;font-weight:900;padding:8px 14px;border-radius:8px}
+  .modalRouteBadge{background:transparent;color:var(--text);font-size:18px;font-weight:900;padding:0}
   .modalDayTabs{display:flex;gap:6px}
   .modalDayTab{background:transparent;border:1px solid var(--line);color:var(--muted);padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;transition:all .2s}
-  .modalDayTab.active{background:var(--btn);color:#fff;border-color:var(--btn)}
+  .modalDayTab.active{background:#6b7280;color:#fff;border-color:#6b7280}
   .modalDayTab:hover{border-color:var(--accent)}
 
   /* Modal stats cards */
@@ -660,6 +660,7 @@
     grid-template-columns: 2fr 1fr;
     gap: 16px;
     margin-bottom: 16px;
+    align-items: end;
   }
   .chartsRow .chartSection{
     margin: 0;
