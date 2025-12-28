@@ -278,11 +278,9 @@
   .dayCell .noService{color:var(--muted);font-style:italic}
 
   /* Modal improvements */
-  .modalRouteHeader{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+  .modalRouteHeader{display:flex;align-items:center;gap:16px;margin-bottom:4px}
   .modalRouteBadge{background:var(--accent);color:#fff;font-size:18px;font-weight:900;padding:8px 14px;border-radius:8px}
-  .modalRouteName{font-size:20px;font-weight:800}
-  .modalTimeRange{font-size:13px;color:var(--muted)}
-  .modalDayTabs{display:flex;gap:6px;margin-top:12px}
+  .modalDayTabs{display:flex;gap:6px}
   .modalDayTab{background:transparent;border:1px solid var(--line);color:var(--muted);padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;transition:all .2s}
   .modalDayTab.active{background:var(--btn);color:#fff;border-color:var(--btn)}
   .modalDayTab:hover{border-color:var(--accent)}
@@ -2022,17 +2020,15 @@ function renderModalContent(){
   const t0 = document.getElementById('t0').value || '07:00';
   const t1 = document.getElementById('t1').value || '22:00';
 
-  // Build modal header with day tabs
+  // Build modal header with day tabs in top bar
   const headerHtml = `
     <div class="modalRouteHeader">
       <span class="modalRouteBadge">${route}</span>
-      <span class="modalRouteName">${route}</span>
-    </div>
-    <div class="modalTimeRange">Analysis ${t0} - ${t1}</div>
-    <div class="modalDayTabs">
-      <button class="modalDayTab ${day==='Weekday'?'active':''}" onclick="switchModalDay('Weekday')">WEEKDAY</button>
-      <button class="modalDayTab ${day==='Saturday'?'active':''}" onclick="switchModalDay('Saturday')">SATURDAY</button>
-      <button class="modalDayTab ${day==='Sunday'?'active':''}" onclick="switchModalDay('Sunday')">SUNDAY</button>
+      <div class="modalDayTabs">
+        <button class="modalDayTab ${day==='Weekday'?'active':''}" onclick="switchModalDay('Weekday')">WEEKDAY</button>
+        <button class="modalDayTab ${day==='Saturday'?'active':''}" onclick="switchModalDay('Saturday')">SATURDAY</button>
+        <button class="modalDayTab ${day==='Sunday'?'active':''}" onclick="switchModalDay('Sunday')">SUNDAY</button>
+      </div>
     </div>
   `;
 
