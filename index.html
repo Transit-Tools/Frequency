@@ -468,10 +468,10 @@
     margin-left: 4px;
   }
 
-  /* 5-column stats row: Tier Badge | Tier Legend | Analysis | Outbound | Inbound */
+  /* 4-column stats row: Frequency | Analysis | Outbound | Inbound */
   .statsRow{
     display: grid;
-    grid-template-columns: 120px 140px 1fr 180px 180px;
+    grid-template-columns: 160px 1fr 180px 180px;
     gap: 12px;
     margin-bottom: 16px;
   }
@@ -479,34 +479,40 @@
     padding: 12px;
     margin: 0;
   }
-  .statsRow .tierCard{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .statsRow .tierCard .tier{
-    font-size: 16px;
-    font-weight: 800;
-    padding: 10px 14px;
-  }
-  .statsRow .legendCard{
+  .statsRow .frequencyCard{
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    justify-content: center;
+    gap: 6px;
   }
-  .statsRow .legendCard .tierBadgeSmall{
+  .statsRow .frequencyCard .freqHeader{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .statsRow .frequencyCard .freqBadge{
+    padding: 3px 8px;
+    border-radius: 4px;
     font-size: 10px;
-    padding: 3px 6px;
-    display: inline-block;
-    width: fit-content;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #fff;
   }
-  .statsRow .legendCard .tierThreshold{
+  .statsRow .frequencyCard .freqBadge.tier10{background:#10b981}
+  .statsRow .frequencyCard .freqBadge.tier15{background:#22c55e}
+  .statsRow .frequencyCard .freqBadge.tier20{background:#06b6d4}
+  .statsRow .frequencyCard .freqBadge.tier30{background:#eab308}
+  .statsRow .frequencyCard .freqBadge.tier60{background:#ef4444}
+  .statsRow .frequencyCard .freqBadge.tierBig{background:#6b7280}
+  .statsRow .frequencyCard .freqThreshold{
     font-size: 11px;
     color: var(--muted);
   }
-  .statsRow .legendCard .tierNote{
-    font-size: 10px;
+  .statsRow .frequencyCard .freqStatRow{
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+  }
+  .statsRow .frequencyCard .freqStatRow span{
     color: var(--muted);
   }
   .tierLegend .tierExplain{
@@ -582,8 +588,7 @@
     .statsRow .analysisCard{
       grid-column: span 3;
     }
-    .statsRow .tierCard,
-    .statsRow .legendCard{
+    .statsRow .frequencyCard{
       grid-column: span 1;
     }
   }
@@ -594,8 +599,7 @@
     .statsRow .analysisCard{
       grid-column: span 2;
     }
-    .statsRow .tierCard,
-    .statsRow .legendCard,
+    .statsRow .frequencyCard,
     .statsRow .dirCard{
       grid-column: span 1;
     }
@@ -2095,17 +2099,17 @@ function renderModalContent(){
   };
   const currentTierThreshold = tierThresholds[displayTierClass] || '';
 
-  // Build 5-column stats row: Tier Badge | Tier Legend | Analysis | Outbound | Inbound
+  // Build 4-column stats row: Frequency | Analysis | Outbound | Inbound
+  const violationCount = violations.hard + violations.grace;
   const statsCardsHtml = `
     <div class="statsRow">
-      <div class="statCard tierCard">
-        <span class="tier ${displayTierClass}">${displayTierLabel}</span>
-      </div>
-      <div class="statCard legendCard">
-        <span class="tierBadgeSmall ${displayTierClass}">${displayTierLabel}</span>
-        <span class="tierThreshold">${currentTierThreshold}</span>
-        <span class="tierNote">+5 min grace, max 2 violations</span>
-        ${hasOverride ? '<span class="overrideIndicator">(Override)</span>' : ''}
+      <div class="statCard frequencyCard">
+        <div class="freqHeader">
+          <span class="freqBadge ${displayTierClass}">${displayTierLabel}</span>
+          <span class="freqThreshold">${currentTierThreshold}</span>
+        </div>
+        <div class="freqStatRow"><span>Violations:</span> <strong>${violationCount}</strong></div>
+        ${hasOverride ? '<div class="freqStatRow"><span>Override:</span> <strong>Yes</strong></div>' : ''}
       </div>
       <div class="statCard analysisCard">
         <div class="label" style="margin-bottom:8px">COMBINED ANALYSIS</div>
