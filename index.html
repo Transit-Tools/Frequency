@@ -2100,7 +2100,6 @@ function renderModalContent(){
   const currentTierThreshold = tierThresholds[displayTierClass] || '';
 
   // Build 4-column stats row: Frequency | Analysis | Outbound | Inbound
-  const totalGaps = allGaps.length;
   const statsCardsHtml = `
     <div class="statsRow">
       <div class="statCard frequencyCard">
@@ -2108,7 +2107,7 @@ function renderModalContent(){
           <span class="freqBadge ${displayTierClass}">${displayTierLabel}</span>
           <span class="freqThreshold">${currentTierThreshold}</span>
         </div>
-        <div class="freqStatRow"><span>Total gaps:</span> <strong>${totalGaps}</strong></div>
+        <div class="freqStatRow"><span>Exceptions:</span> <strong>${violations.grace}/2</strong></div>
       </div>
       <div class="statCard analysisCard">
         <div class="label" style="margin-bottom:8px">COMBINED ANALYSIS</div>
