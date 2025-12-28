@@ -225,14 +225,12 @@
   .fileBtn .btn:hover{background:var(--chip)}
   .dark .fileBtn .btn{background:var(--panel);color:var(--text);border:1px solid var(--line)}
   .dark .fileBtn .btn:hover{background:var(--chip)}
-  .btnDemo{background:var(--chip);color:var(--text);border:1px solid var(--line);padding:12px 20px;font-size:14px}
-  .btnDemo:hover{background:var(--line)}
-  .dark .btnDemo{background:#374151;color:#e5e7eb;border:1px solid #4b5563}
-  .dark .btnDemo:hover{background:#4b5563}
-  .btnAnalyze{background:#10b981;color:#fff;padding:12px 20px;font-size:14px}
-  .btnAnalyze:hover{background:#059669}
-  .btnAnalyze:disabled{background:#d1d5db;color:#9ca3af;opacity:.7}
-  .dark .btnAnalyze:disabled{background:#374151;color:#6b7280}
+  .btnUpload,.btnAction{background:var(--panel);color:var(--text);border:1px solid var(--line);padding:12px 20px;font-size:14px;min-width:100px;text-align:center}
+  .btnUpload:hover,.btnAction:hover{background:var(--chip)}
+  .btnAction:disabled{background:#d1d5db;color:#9ca3af;opacity:.7}
+  .dark .btnUpload,.dark .btnAction{background:var(--panel);color:var(--text);border:1px solid var(--line)}
+  .dark .btnUpload:hover,.dark .btnAction:hover{background:var(--chip)}
+  .dark .btnAction:disabled{background:#374151;color:#6b7280}
   .timeRange{display:flex;align-items:center;gap:8px;color:var(--muted);font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.03em}
   .timeRange input[type="time"]{width:100px;padding:10px 12px;border-radius:10px;font-weight:600}
   .daySelector{display:flex;align-items:center;gap:6px}
@@ -245,8 +243,11 @@
   .dayPill.active{box-shadow:0 0 0 3px var(--accent)}
   .filterMessage{margin-top:14px;font-size:13px;color:var(--muted)}
   .filterMessage strong{color:var(--text);font-weight:700}
-  .filterBar{display:flex;align-items:center;justify-content:space-between;margin-top:14px}
-  .filterBar .search{max-width:300px;background:var(--chip);border:1px solid var(--line)}
+  .filterBar{display:flex;align-items:center;justify-content:space-between;margin-top:14px;gap:16px}
+  .feedMetaInline{display:flex;gap:16px;font-size:13px;color:var(--muted);flex-wrap:wrap}
+  .feedMetaInline strong{color:var(--text);font-weight:600}
+  .filterBarRight{display:flex;align-items:center;gap:12px}
+  .filterBar .search{width:250px;background:var(--chip);border:1px solid var(--line)}
 
   /* Tier summary boxes */
   .tierBoxes{display:flex;gap:10px;flex:1}
@@ -354,12 +355,6 @@
   .validationControls label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase}
   .validationControls select,.validationControls textarea{padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text)}
   .validationMeta{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
-
-  /* Feed metadata */
-  .feedMeta{margin-top:12px;padding:12px;background:rgba(148,163,184,.08);border:1px solid var(--line);border-radius:10px;font-size:13px}
-  .feedMeta div{margin-bottom:4px}
-  .feedMeta div:last-child{margin-bottom:0}
-  .feedMeta strong{color:var(--text);font-weight:700}
 
   /* Historical data banner */
   .historicalBanner{margin-top:12px;padding:12px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);border-radius:10px;font-size:13px;color:#b45309}
@@ -738,28 +733,22 @@
     <section id="controlsPanel" class="panel">
       <div class="uploadRow">
         <div class="fileBtn">
-          <label for="gtfs" class="btn">📁 Select GTFS Zip...</label>
+          <label for="gtfs" class="btn btnUpload">Upload GTFS</label>
           <input id="gtfs" type="file" accept=".zip" style="display:none">
           <span id="fname" class="fileName"></span>
         </div>
-        <button id="demo" class="btn btnDemo" type="button">DEMO</button>
         <div class="timeRange">
           <span>TIME</span>
           <input id="t0" type="time" value="07:00">
           <span>—</span>
           <input id="t1" type="time" value="22:00">
         </div>
-        <button id="go" class="btn btnAnalyze" type="button" disabled>📊 ANALYZE</button>
-        <button id="exportBtn" class="btn" style="display:none" onclick="exportResults()">💾 Export Results</button>
+        <button id="go" class="btn btnAction" type="button" disabled>Analyze</button>
+        <button id="exportBtn" class="btn btnAction" style="display:none" onclick="exportResults()">Export</button>
       </div>
       <div id="rangeMessage" class="rangeMessage" role="status" aria-live="polite"></div>
       <!-- Hidden merge checkbox - default on -->
       <input id="merge" type="checkbox" checked style="display:none">
-      <div id="feedMetadata" class="feedMeta" style="display:none">
-        <div><strong>Feed:</strong> <span id="feedFilename"></span></div>
-        <div><strong>Valid:</strong> <span id="feedValidity"></span></div>
-        <div><strong>Analyzed:</strong> <span id="analyzedTime"></span></div>
-      </div>
       <div id="historicalBanner" class="historicalBanner" style="display:none"></div>
     </section>
 
@@ -802,11 +791,18 @@
         Showing all routes for <strong id="sortDayLabel">Weekday</strong>. Click a frequency box above to filter.
       </div>
       <div class="filterBar">
-        <div class="search">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-opacity=".5" stroke-width="2" d="m21 21-4.35-4.35M10 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z"/></svg>
-          <input id="q" placeholder="Filter by route name...">
+        <div id="feedMetadata" class="feedMetaInline" style="display:none">
+          <span><strong>Feed:</strong> <span id="feedFilename"></span></span>
+          <span><strong>Valid:</strong> <span id="feedValidity"></span></span>
+          <span><strong>Analyzed:</strong> <span id="analyzedTime"></span></span>
         </div>
-        <span class="routeCount">Displaying <strong>0</strong> routes</span>
+        <div class="filterBarRight">
+          <div class="search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-opacity=".5" stroke-width="2" d="m21 21-4.35-4.35M10 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z"/></svg>
+            <input id="q" placeholder="Filter by route name...">
+          </div>
+          <span class="routeCount">Displaying <strong>0</strong> routes</span>
+        </div>
       </div>
     </section>
 
@@ -853,6 +849,16 @@ window.FEED_INFO = null;
 window.ANALYZED_AT = null;
 window.IS_HISTORICAL_DATA = false; // True if feed dates are in the past
 
+// Format YYYYMMDD to readable date like "Nov 30, 2025"
+function formatGtfsDate(dateStr){
+  if(!dateStr || dateStr.length !== 8) return dateStr;
+  const year = dateStr.substring(0,4);
+  const month = parseInt(dateStr.substring(4,6),10) - 1;
+  const day = parseInt(dateStr.substring(6,8),10);
+  const date = new Date(year, month, day);
+  return date.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+}
+
 const fileEl = document.getElementById('gtfs');
 const btn = document.getElementById('go');
 const fname = document.getElementById('fname');
@@ -863,14 +869,6 @@ fileEl.addEventListener('change', ()=>{
   fname.textContent = fileEl.files?.[0]?.name || '';
 });
 btn.addEventListener('click', analyze);
-
-// Demo button
-document.getElementById('demo').addEventListener('click', loadDemo);
-
-async function loadDemo(){
-  // For demo, we'll show an alert - implement with actual demo data if available
-  alert('Demo mode: Upload a GTFS ZIP file to analyze transit frequency.');
-}
 
 function setupResultsSizing(){
   updateResultsMaxHeight();
@@ -1561,10 +1559,10 @@ async function analyze(){
   document.getElementById('feedFilename').textContent = FEED_INFO.filename;
   document.getElementById('feedValidity').textContent =
     FEED_INFO.validFrom && FEED_INFO.validTo
-      ? `${FEED_INFO.validFrom} to ${FEED_INFO.validTo}`
+      ? `${formatGtfsDate(FEED_INFO.validFrom)} to ${formatGtfsDate(FEED_INFO.validTo)}`
       : 'Unknown';
   document.getElementById('analyzedTime').textContent = new Date(ANALYZED_AT).toLocaleString();
-  document.getElementById('feedMetadata').style.display = 'block';
+  document.getElementById('feedMetadata').style.display = 'flex';
 
   // Detect and display historical data warning
   window.IS_HISTORICAL_DATA = detectHistoricalData();
@@ -1572,7 +1570,7 @@ async function analyze(){
   if(historicalBanner){
     if(window.IS_HISTORICAL_DATA){
       historicalBanner.style.display = 'block';
-      const validTo = FEED_INFO.validTo || 'Unknown';
+      const validTo = FEED_INFO.validTo ? formatGtfsDate(FEED_INFO.validTo) : 'Unknown';
       historicalBanner.innerHTML = `<strong>Historical Data:</strong> This GTFS feed expired on ${validTo}. Results reflect past service patterns.`;
     } else {
       historicalBanner.style.display = 'none';
@@ -2160,7 +2158,7 @@ function renderModalContent(){
 
   // Build validation panel
   const feedValidity = FEED_INFO?.validFrom && FEED_INFO?.validTo
-    ? `${FEED_INFO.validFrom} to ${FEED_INFO.validTo}`
+    ? `${formatGtfsDate(FEED_INFO.validFrom)} to ${formatGtfsDate(FEED_INFO.validTo)}`
     : 'Unknown';
   const analyzedAt = ANALYZED_AT ? new Date(ANALYZED_AT).toLocaleString() : 'Unknown';
   const verifiedAt = validation?.verifiedAt ? new Date(validation.verifiedAt).toLocaleString() : 'Not verified';
