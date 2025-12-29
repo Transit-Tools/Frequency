@@ -1322,17 +1322,16 @@ function bucketCounts(headways){
   return b;
 }
 // Two-stage screening for each tier:
-// Stage 1 - Pre-screen: Check if trip count meets minimum (900/threshold)
+// Stage 1 - Pre-screen: Check if trip count meets minimum (spanMinutes/threshold)
 // Stage 2 - Full-screen: STRICT grace - at most 2 gaps where T < h ≤ T+5; any h > T+5 fails immediately.
 // If all tiers fail both stages, returns 'span' for exclusion.
-function leastWorstTier(headways, tripCount){
+function leastWorstTier(headways, tripCount, spanMinutes){
   const tiers=[10,15,20,30,60];
-  const SPAN_MINUTES=900; // 7am-10pm = 15 hours = 900 minutes
   const GRACE=5, MAX_GRACE_COUNT=2;
 
   for(const T of tiers){
     // Stage 1 - Pre-screen: Check minimum trip count
-    const minTrips = Math.ceil(SPAN_MINUTES / T);
+    const minTrips = Math.ceil(spanMinutes / T);
     if(tripCount < minTrips){
       // FAIL Stage 1 - not enough trips to cover the window at this frequency
       continue;
@@ -1460,7 +1459,8 @@ function mergeRows(rows){
     const best = computeMedian(v.hw);
     const mergedTimes=v.times.sort((a,b)=>a-b);
     const dedupTimes=[]; for(const t of mergedTimes){ if(!dedupTimes.length || dedupTimes[dedupTimes.length-1]!==t) dedupTimes.push(t); }
-    const tier = leastWorstTier(v.hw, dedupTimes.length);
+    const spanMins = t2m(document.getElementById('t1').value) - t2m(document.getElementById('t0').value);
+    const tier = leastWorstTier(v.hw, dedupTimes.length, spanMins);
 
     // Process each direction: clean times, calculate gaps with time info
     for(const dirKey of Object.keys(v.dirDetails)){
@@ -1639,7 +1639,8 @@ async function analyze(){
       const b=bucketCounts(gaps);
       const avg=Math.round(gaps.reduce((a,b)=>a+b,0)/gaps.length);
       const best=computeMedian(gaps);
-      const tier=leastWorstTier(gaps, dedup.length);
+      const spanMins=t1-t0;
+      const tier=leastWorstTier(gaps, dedup.length, spanMins);
 
       rows.push({route:rname, dir, day, b, avg, best, tier, hw:gaps, times:dedup});
 
