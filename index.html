@@ -214,6 +214,7 @@
   .dark .fileBtn .btn{background:var(--panel);color:var(--text);border:1px solid var(--line)}
   .dark .fileBtn .btn:hover{background:var(--chip)}
   .btnUpload,.btnAction{background:var(--panel);color:var(--text);border:1px solid var(--line);padding:12px 20px;font-size:14px;min-width:100px;text-align:center}
+  label.btnUpload{text-transform:none}
   .btnUpload:hover,.btnAction:hover{background:var(--chip)}
   .btnAction:disabled{background:#d1d5db;color:#9ca3af;opacity:.7}
   .dark .btnUpload,.dark .btnAction{background:var(--panel);color:var(--text);border:1px solid var(--line)}
@@ -735,7 +736,11 @@
       <!-- Hidden merge checkbox - default on -->
       <input id="merge" type="checkbox" checked style="display:none">
       <div id="historicalBanner" class="historicalBanner" style="display:none"></div>
-      <div id="filenameDisplay" class="fileName" style="margin-top:8px"></div>
+      <div id="feedMetadata" class="feedMetaInline" style="display:none;margin-top:8px">
+        <span><strong>Feed:</strong> <span id="feedFilename"></span></span>
+        <span><strong>Valid:</strong> <span id="feedValidity"></span></span>
+        <span><strong>Analyzed:</strong> <span id="analyzedTime"></span></span>
+      </div>
     </section>
 
     <!-- Time filter settings modal -->
@@ -800,11 +805,6 @@
         Showing all routes for <strong id="sortDayLabel">Weekday</strong> <span id="timeRangeLabel"></span>. Click a frequency box above to filter.
       </div>
       <div class="filterBar">
-        <div id="feedMetadata" class="feedMetaInline" style="display:none">
-          <span><strong>Feed:</strong> <span id="feedFilename"></span></span>
-          <span><strong>Valid:</strong> <span id="feedValidity"></span></span>
-          <span><strong>Analyzed:</strong> <span id="analyzedTime"></span></span>
-        </div>
         <div class="filterBarRight">
           <div class="search">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-opacity=".5" stroke-width="2" d="m21 21-4.35-4.35M10 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z"/></svg>
@@ -915,11 +915,7 @@ const btn = document.getElementById('go');
 // File selection via label click
 fileEl.addEventListener('change', ()=>{
   btn.disabled = !(fileEl.files && fileEl.files.length>0);
-  const filenameDisplay = document.getElementById('filenameDisplay');
-  if(filenameDisplay){
-    filenameDisplay.textContent = fileEl.files?.[0]?.name ? `File: ${fileEl.files[0].name}` : '';
-    document.getElementById('controlsPanel').style.display = fileEl.files?.[0] ? 'block' : 'none';
-  }
+  document.getElementById('controlsPanel').style.display = fileEl.files?.[0] ? 'block' : 'none';
 });
 btn.addEventListener('click', analyze);
 
