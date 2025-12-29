@@ -100,6 +100,7 @@
   .t30{background:rgba(245,158,11,.15); color:var(--warn); border:1px solid rgba(245,158,11,.35)}
   .t60{background:rgba(239,68,68,.15); color:var(--meh); border:1px solid rgba(239,68,68,.35)}
   .tBig{background:rgba(107,114,128,.15); color:#cbd5e1; border:1px solid rgba(107,114,128,.4)}
+  .tSpan{background:rgba(147,51,234,.15); color:#a78bfa; border:1px solid rgba(147,51,234,.4)}
   .badge{background:var(--chip); border:1px solid var(--line); color:var(--chipText); padding:6px 10px; border-radius:8px; font-size:12px; font-weight:700}
   .highlight{animation:flash 1.6s ease}
   @keyframes flash{0%{background:#04785733}100%{background:transparent}}
@@ -251,6 +252,7 @@
   .tier30{background:#eab308}
   .tier60{background:#ef4444}
   .tierBig{background:#6b7280}
+  .tierSpan{background:#9333ea}
 
   /* Route table new styles */
   .tableHeader{display:flex;justify-content:flex-end;margin-bottom:8px}
@@ -495,6 +497,7 @@
   .statsRow .frequencyCard .freqBadge.tier30{background:#eab308}
   .statsRow .frequencyCard .freqBadge.tier60{background:#ef4444}
   .statsRow .frequencyCard .freqBadge.tierBig{background:#6b7280}
+  .statsRow .frequencyCard .freqBadge.tierSpan{background:#9333ea}
   .statsRow .frequencyCard .freqThreshold{
     font-size: 11px;
     color: var(--muted);
@@ -525,6 +528,7 @@
   .tierBadgeSmall.t30, .tierBadgeSmall.tier30{background:#eab308}
   .tierBadgeSmall.t60, .tierBadgeSmall.tier60{background:#ef4444}
   .tierBadgeSmall.tBig, .tierBadgeSmall.tierBig{background:#6b7280}
+  .tierBadgeSmall.tSpan, .tierBadgeSmall.tierSpan{background:#9333ea}
   .tierLegend .tierExplain .tierThreshold{
     font-size: 10px;
     color: var(--muted);
@@ -801,6 +805,10 @@
           </button>
           <button class="tierBox tierBig" data-tier=">60" type="button">
             <div class="tierName">SPARSE</div>
+            <div class="tierCount">0</div>
+          </button>
+          <button class="tierBox tierSpan" data-tier="span" type="button">
+            <div class="tierName">SPAN</div>
             <div class="tierCount">0</div>
           </button>
         </div>
@@ -1313,12 +1321,24 @@ function bucketCounts(headways){
   }
   return b;
 }
-// STRICT grace: at most 2 gaps where T < h ≤ T+5; any h > T+5 fails immediately.
-function leastWorstTier(headways){
-  const tiers=[10,15,20,30,60,Infinity];
+// Two-stage screening for each tier:
+// Stage 1 - Pre-screen: Check if trip count meets minimum (900/threshold)
+// Stage 2 - Full-screen: STRICT grace - at most 2 gaps where T < h ≤ T+5; any h > T+5 fails immediately.
+// If all tiers fail both stages, returns 'span' for exclusion.
+function leastWorstTier(headways, tripCount){
+  const tiers=[10,15,20,30,60];
+  const SPAN_MINUTES=900; // 7am-10pm = 15 hours = 900 minutes
   const GRACE=5, MAX_GRACE_COUNT=2;
+
   for(const T of tiers){
-    if(T===Infinity) return '>60';
+    // Stage 1 - Pre-screen: Check minimum trip count
+    const minTrips = Math.ceil(SPAN_MINUTES / T);
+    if(tripCount < minTrips){
+      // FAIL Stage 1 - not enough trips to cover the window at this frequency
+      continue;
+    }
+
+    // Stage 2 - Full-screen: Gap analysis
     let graceCount=0;
     let fail=false;
     for(const h of headways){
@@ -1332,7 +1352,9 @@ function leastWorstTier(headways){
     }
     if(!fail) return String(T);
   }
-  return '>60';
+
+  // All tiers failed - exclude with reason "span"
+  return 'span';
 }
 function directionLabel(dir){
   const merge = document.getElementById('merge').checked;
@@ -1436,9 +1458,9 @@ function mergeRows(rows){
     const b = bucketCounts(v.hw);
     const avg = v.hw.length ? Math.round(v.hw.reduce((a,b)=>a+b,0)/v.hw.length) : 0;
     const best = computeMedian(v.hw);
-    const tier = leastWorstTier(v.hw);
     const mergedTimes=v.times.sort((a,b)=>a-b);
     const dedupTimes=[]; for(const t of mergedTimes){ if(!dedupTimes.length || dedupTimes[dedupTimes.length-1]!==t) dedupTimes.push(t); }
+    const tier = leastWorstTier(v.hw, dedupTimes.length);
 
     // Process each direction: clean times, calculate gaps with time info
     for(const dirKey of Object.keys(v.dirDetails)){
@@ -1617,7 +1639,7 @@ async function analyze(){
       const b=bucketCounts(gaps);
       const avg=Math.round(gaps.reduce((a,b)=>a+b,0)/gaps.length);
       const best=computeMedian(gaps);
-      const tier=leastWorstTier(gaps);
+      const tier=leastWorstTier(gaps, dedup.length);
 
       rows.push({route:rname, dir, day, b, avg, best, tier, hw:gaps, times:dedup});
 
@@ -1698,6 +1720,7 @@ function tierClass(t){
   if(t==='20') return 't20';
   if(t==='30') return 't30';
   if(t==='60') return 't60';
+  if(t==='span') return 'tSpan';
   return 'tBig';
 }
 
@@ -1721,7 +1744,7 @@ function render(opts={}){
   if(q) routes = routes.filter(r => r.toLowerCase().includes(q));
 
   // Count tiers based on sortDay (use override tier if present)
-  const tierCounts = {'10':0, '15':0, '20':0, '30':0, '60':0, '>60':0};
+  const tierCounts = {'10':0, '15':0, '20':0, '30':0, '60':0, '>60':0, 'span':0};
   for(const route of routes){
     const dayData = ROUTE_DATA[route][sortDay];
     if(dayData){
@@ -1906,6 +1929,7 @@ function tierToLabel(tier){
   if(tier === '20') return 'Good';
   if(tier === '30') return 'Basic';
   if(tier === '60') return 'Infreq';
+  if(tier === 'span') return 'Span';
   return 'Sparse';
 }
 
@@ -1918,6 +1942,7 @@ function tierToLabelFromValue(tierValue){
   if(tierValue === 'basic') return 'Basic';
   if(tierValue === '60') return 'Infreq';
   if(tierValue === 'infreq') return 'Sparse';
+  if(tierValue === 'span') return 'Span';
   return tierValue;
 }
 
@@ -1929,6 +1954,7 @@ function tierClassFromValue(tierValue){
   if(tierValue === 'basic') return 't30';
   if(tierValue === '60') return 't60';
   if(tierValue === 'infreq') return 'tBig';
+  if(tierValue === 'span') return 'tSpan';
   return 'tBig';
 }
 
@@ -1940,6 +1966,7 @@ function tierValueToStandard(tierValue){
   if(tierValue === 'basic') return '30';
   if(tierValue === '60') return '60';
   if(tierValue === 'infreq') return '>60';
+  if(tierValue === 'span') return 'span';
   return tierValue;
 }
 
@@ -2155,7 +2182,8 @@ function renderModalContent(){
     't20': '≤20 min', 'tier20': '≤20 min',
     't30': '≤30 min', 'tier30': '≤30 min',
     't60': '≤60 min', 'tier60': '≤60 min',
-    'tBig': '>60 min', 'tierBig': '>60 min'
+    'tBig': '>60 min', 'tierBig': '>60 min',
+    'tSpan': 'Insufficient trips', 'tierSpan': 'Insufficient trips'
   };
   const currentTierThreshold = tierThresholds[displayTierClass] || '';
 
