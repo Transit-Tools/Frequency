@@ -924,10 +924,14 @@ function detectMode(route_type, routeName){
 const fileEl = document.getElementById('gtfs');
 const btn = document.getElementById('go');
 
-// File selection via label click
+// File selection via label click - auto-analyze after upload
 fileEl.addEventListener('change', ()=>{
   btn.disabled = !(fileEl.files && fileEl.files.length>0);
   document.getElementById('controlsPanel').style.display = fileEl.files?.[0] ? 'block' : 'none';
+  // Automatically trigger analysis after file upload
+  if(fileEl.files && fileEl.files.length > 0){
+    analyze();
+  }
 });
 btn.addEventListener('click', analyze);
 
