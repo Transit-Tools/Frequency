@@ -607,39 +607,56 @@
 
   /* Modal grid layout with sidebar */
   .modalGrid{
-    display: grid;
-    grid-template-columns: 1fr 360px;
+    display: flex;
+    flex-direction: column;
     gap: 16px;
-    align-items: start;
+  }
+  .modalTopRow{
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 16px;
+    align-items: stretch;
   }
   .modalMain{
     min-width: 0;
     overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .modalMain .chartsRow{
+    flex: 1;
   }
   .modalSidebar{
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    position: sticky;
-    top: 20px;
-    align-items: start;
   }
   .modalSidebar .validationPanel{
     margin: 0;
     padding: 12px;
     width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
   }
   .modalSidebar .validationPanel h4{
     margin: 0 0 14px;
     font-size: 14px;
     font-weight: 800;
   }
+  .modalSidebar .validationPanel .btn{
+    margin-top: auto;
+  }
   .modalSidebar .btn{
     padding: 10px 14px;
     font-size: 13px;
   }
+  .modalBottomRow{
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
   @media (max-width:1100px){
-    .modalGrid{
+    .modalTopRow{
       grid-template-columns: 1fr;
     }
     .modalSidebar{
@@ -652,7 +669,6 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
-    margin-bottom: 16px;
     align-items: stretch;
   }
   .chartsRow .chartSection{
@@ -2416,20 +2432,24 @@ function renderModalContent(){
   const body = document.getElementById('modalBody');
   body.innerHTML = `
     <div class="modalGrid">
-      <div class="modalMain">
-        ${statsCardsHtml}
-        <div class="chartsRow">
-          ${chartSection}
-          ${gapDistSection}
+      <div class="modalTopRow">
+        <div class="modalMain">
+          ${statsCardsHtml}
+          <div class="chartsRow">
+            ${chartSection}
+            ${gapDistSection}
+          </div>
         </div>
+        <div class="modalSidebar">
+          ${validationPanelHtml}
+        </div>
+      </div>
+      <div class="modalBottomRow">
         <div class="compactDepartures">
           <h4>Departure Times</h4>
           ${departuresSection}
         </div>
         ${serviceWindowsSection}
-      </div>
-      <div class="modalSidebar">
-        ${validationPanelHtml}
       </div>
     </div>
   `;
