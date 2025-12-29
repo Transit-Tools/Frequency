@@ -268,12 +268,16 @@
   .dayCell .noService{color:var(--muted);font-style:italic}
 
   /* Modal improvements */
-  .modalRouteHeader{display:flex;align-items:center;gap:16px;margin-bottom:4px}
+  .modalRouteHeader{display:flex;align-items:center;gap:16px;margin-bottom:4px;flex-wrap:wrap}
   .modalRouteBadge{background:transparent;color:var(--text);font-size:18px;font-weight:900;padding:0}
   .modalDayTabs{display:flex;gap:6px}
   .modalDayTab{background:transparent;border:1px solid var(--line);color:var(--muted);padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;transition:all .2s}
   .modalDayTab.active{background:#6b7280;color:#fff;border-color:#6b7280}
   .modalDayTab:hover{border-color:var(--accent)}
+  .modalContentTabs{display:flex;gap:6px;margin-left:auto}
+  .modalContentTab{background:transparent;border:1px solid var(--line);color:var(--muted);padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;transition:all .2s}
+  .modalContentTab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .modalContentTab:hover{border-color:var(--accent)}
 
   /* Modal stats cards */
   .statsCards{display:flex;gap:12px;margin-bottom:16px}
@@ -2050,10 +2054,12 @@ function buildGapDistributionBars(headways){
 }
 let currentModalRoute = null;
 let currentModalDay = 'Weekday';
+let currentModalTab = 'overview'; // 'overview' or 'departures'
 
 function openModal(r, day){
   currentModalRoute = r.route;
   currentModalDay = day || r.day;
+  currentModalTab = 'overview'; // Reset to overview when opening modal
 
   const modal = document.getElementById('modal');
   modal.style.display='flex';
@@ -2075,14 +2081,18 @@ function renderModalContent(){
   const t0 = document.getElementById('t0').value || '07:00';
   const t1 = document.getElementById('t1').value || '22:00';
 
-  // Build modal header with day tabs in top bar
+  // Build modal header with day tabs and content tabs in top bar
   const headerHtml = `
     <div class="modalRouteHeader">
       <span class="modalRouteBadge">${route}</span>
       <div class="modalDayTabs">
-        <button class="modalDayTab ${day==='Weekday'?'active':''}" onclick="switchModalDay('Weekday')">WEEKDAY</button>
-        <button class="modalDayTab ${day==='Saturday'?'active':''}" onclick="switchModalDay('Saturday')">SATURDAY</button>
-        <button class="modalDayTab ${day==='Sunday'?'active':''}" onclick="switchModalDay('Sunday')">SUNDAY</button>
+        <button class="modalDayTab ${day==='Weekday'?'active':''}" onclick="switchModalDay('Weekday')">Weekday</button>
+        <button class="modalDayTab ${day==='Saturday'?'active':''}" onclick="switchModalDay('Saturday')">Saturday</button>
+        <button class="modalDayTab ${day==='Sunday'?'active':''}" onclick="switchModalDay('Sunday')">Sunday</button>
+      </div>
+      <div class="modalContentTabs">
+        <button class="modalContentTab ${currentModalTab==='overview'?'active':''}" onclick="switchModalTab('overview')">Overview</button>
+        <button class="modalContentTab ${currentModalTab==='departures'?'active':''}" onclick="switchModalTab('departures')">Departures</button>
       </div>
     </div>
   `;
@@ -2276,25 +2286,31 @@ function renderModalContent(){
     </div>
   `;
 
+  // Build content based on active tab
+  const overviewContent = `
+    ${statsCardsHtml}
+    <div class="chartsRow">
+      ${chartSection}
+      ${gapDistSection}
+    </div>
+  `;
+
+  const departuresContent = `
+    <div class="compactDepartures">
+      <h4>Departure Times</h4>
+      ${departuresSection}
+    </div>
+  `;
+
   const body = document.getElementById('modalBody');
   body.innerHTML = `
     <div class="modalGrid">
       <div class="modalTopRow">
         <div class="modalMain">
-          ${statsCardsHtml}
-          <div class="chartsRow">
-            ${chartSection}
-            ${gapDistSection}
-          </div>
+          ${currentModalTab === 'overview' ? overviewContent : departuresContent}
         </div>
         <div class="modalSidebar">
           ${validationPanelHtml}
-        </div>
-      </div>
-      <div class="modalBottomRow">
-        <div class="compactDepartures">
-          <h4>Departure Times</h4>
-          ${departuresSection}
         </div>
       </div>
     </div>
@@ -2303,6 +2319,11 @@ function renderModalContent(){
 
 function switchModalDay(day){
   currentModalDay = day;
+  renderModalContent();
+}
+
+function switchModalTab(tab){
+  currentModalTab = tab;
   renderModalContent();
 }
 
