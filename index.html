@@ -854,7 +854,7 @@
 let RAW_ROWS = []; // {route, dir, day, b, avg, tier, hw:[], times:[], dirDetails:{'0':{times:[],tier},'1':{...}} }
 let ROUTE_DATA = {}; // {routeName: {Weekday: rowData, Saturday: rowData, Sunday: rowData}}
 let ROUTE_MODES = {}; // {routeName: mode} - detected from route_type
-let activeTierFilter = null;
+let activeTierFilters = new Set(); // Multi-select tier filter
 let VALIDATIONS = {}; // {route: {day: {status, notes, verifiedAt, expectedTier, data_source, source_notes}}}
 let ROUTE_LINEAGE = {}; // {route: {stable_id, comparable_to_previous, notes}}
 window.FEED_INFO = null;
@@ -1277,18 +1277,17 @@ if(mergeCheckbox) mergeCheckbox.addEventListener('change', render);
 // Search input
 document.getElementById('q').addEventListener('input', render);
 
-// Tier box click handlers
+// Tier box click handlers (multi-select)
 document.querySelectorAll('.tierBox').forEach(box => {
   box.addEventListener('click', () => {
     const tier = box.dataset.tier;
-    if(activeTierFilter === tier){
-      // Deselect
-      activeTierFilter = null;
+    if(activeTierFilters.has(tier)){
+      // Deselect this tier
+      activeTierFilters.delete(tier);
       box.classList.remove('active');
     } else {
-      // Select this tier
-      document.querySelectorAll('.tierBox').forEach(b => b.classList.remove('active'));
-      activeTierFilter = tier;
+      // Add this tier to selection
+      activeTierFilters.add(tier);
       box.classList.add('active');
     }
     render();
@@ -1739,15 +1738,15 @@ function render(opts={}){
     box.querySelector('.tierCount').textContent = tierCounts[tier] || 0;
   });
 
-  // Filter by tier if active (use override tier if present)
-  if(activeTierFilter){
+  // Filter by tier if any tiers selected (use override tier if present)
+  if(activeTierFilters.size > 0){
     routes = routes.filter(route => {
       const dayData = ROUTE_DATA[route][sortDay];
       if(!dayData) return false;
       const validation = VALIDATIONS[route]?.[sortDay];
       const hasOverride = validation?.manual_override;
       const tier = hasOverride ? tierValueToStandard(validation.manual_override.tier) : dayData.tier;
-      return tier === activeTierFilter;
+      return activeTierFilters.has(tier);
     });
   }
 
