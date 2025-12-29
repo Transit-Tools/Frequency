@@ -135,19 +135,6 @@
   .gapWarn{border-color:#f59e0b;color:#f59e0b}
   .gapHigh{background:#ef44441a;border-color:#ef4444;color:#ef4444}
 
-  .serviceWindows{margin-top:16px}
-  .serviceWindows h4{margin:0 0 8px;font-size:14px}
-  .serviceWindowGrid{display:grid;gap:12px}
-  .serviceWindowGrid.dual{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
-  .serviceWindowWrap{border:1px solid var(--line);border-radius:10px;padding:10px;background:rgba(148,163,184,.08)}
-  .dark .serviceWindowWrap{background:rgba(15,23,42,.3)}
-  .serviceWindowWrap h5{margin:0 0 6px;font-size:13px;color:var(--chipText);text-transform:uppercase;letter-spacing:.03em}
-  .serviceWindowEmpty{color:var(--muted);font-size:12px;padding:6px 0}
-  .serviceWindowScroll{max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:10px}
-  .serviceWindowTable{width:100%;border-collapse:collapse;font-size:12px;font-family:ui-monospace,monospace}
-  .serviceWindowTable th,.serviceWindowTable td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
-  .serviceWindowTable th{background:#fffffff0;position:sticky;top:0;z-index:1}
-  .dark .serviceWindowTable th{background:rgba(17,24,39,.9)}
   .exceptionList{font-size:12px;color:var(--muted);line-height:1.4}
 
   /* Frequency Chart */
@@ -1407,76 +1394,6 @@ function formatDelta(diff){
   return `${diff>0?'+':'−'}${value}`;
 }
 
-function deriveServiceWindows(times, opts={}){
-  const tolerance=Number.isFinite(opts.tolerance)?opts.tolerance:2;
-  const minPairs=Number.isFinite(opts.minPairs)?opts.minPairs:2;
-  if(!Array.isArray(times) || times.length<2) return [];
-  const sorted=[...times].sort((a,b)=>a-b);
-  let current=null;
-  const segments=[];
-
-  function finalize(){
-    if(!current) return;
-    const pairs=current.pairs;
-    if(pairs.length>=minPairs){
-      const gaps=pairs.map(p=>p.gap);
-      const median=computeMedian(gaps);
-      const avg=gaps.reduce((a,b)=>a+b,0)/gaps.length;
-      const mode=computeMode(gaps);
-      const lower=median - tolerance;
-      const upper=median + tolerance;
-      const outliers=[];
-      for(const pair of pairs){
-        const gap=pair.gap;
-        if(gap<lower || gap>upper){
-          outliers.push({start:pair.start,end:pair.end,gap,diff:gap-median});
-        }
-      }
-      segments.push({
-        start:current.start,
-        end:current.last,
-        duration:Math.max(0,current.last-current.start),
-        departures:pairs.length+1,
-        avg,
-        median,
-        mode,
-        typical:median,
-        minGap:Math.min(...gaps),
-        maxGap:Math.max(...gaps),
-        outliers
-      });
-    }
-    current=null;
-  }
-
-  for(let i=1;i<sorted.length;i++){
-    const prev=sorted[i-1];
-    const curr=sorted[i];
-    if(prev==null || curr==null) continue;
-    const gap=curr-prev;
-    if(!Number.isFinite(gap)) continue;
-    if(gap<5 || gap>240){
-      finalize();
-      continue;
-    }
-    if(!current){
-      current={start:prev,last:curr,pairs:[{start:prev,end:curr,gap}]};
-      continue;
-    }
-    const existingGaps=current.pairs.map(p=>p.gap);
-    const typical=computeMedian(existingGaps);
-    if(Math.abs(gap-typical)<=tolerance){
-      current.pairs.push({start:prev,end:curr,gap});
-      current.last=curr;
-    }else{
-      finalize();
-      current={start:prev,last:curr,pairs:[{start:prev,end:curr,gap}]};
-    }
-  }
-  finalize();
-  return segments;
-}
-
 function mergeRows(rows){
   // merge by route+day using real headways and preserving per-direction times
   const m = new Map();
@@ -2044,68 +1961,6 @@ function buildDepartureTable(label, detail){
   }
   return `<div class="gapTableWrap"><h5>${label}</h5><div class="gapTableScroll"><table class="gapTable"><thead><tr><th>#</th><th>Time</th><th>Gap</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
-function buildServiceWindowTable(label, windows){
-  if(!windows || !windows.length){
-    return `<div class="serviceWindowWrap"><h5>${label}</h5><div class="serviceWindowEmpty">Not enough departures to determine a consistent window.</div></div>`;
-  }
-  const rows=windows.map((win,idx)=>{
-    const winLabel=win.label||'';
-    const span=`${m2t(win.start)}–${m2t(win.end)}`;
-    const coverage=formatDuration(win.duration);
-    const best=formatHeadway(win.typical);
-    const avg=formatHeadway(win.avg);
-    const dep=`${win.departures}`;
-    return `<tr><td>${winLabel}</td><td>${span}</td><td>${coverage}</td><td>${best} min</td><td>${avg} min</td><td>${dep}</td></tr>`;
-  }).join('');
-  return `<div class="serviceWindowWrap"><h5>${label}</h5><div class="serviceWindowScroll"><table class="serviceWindowTable"><thead><tr><th>Type</th><th>Window</th><th>Span</th><th>Headway</th><th>Avg</th><th>Trips</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
-}
-
-function labelServiceWindows(windows){
-  if(!windows || windows.length===0) return [];
-  // Label windows based on headway quality:
-  // - Peak service = window(s) with shortest typical headway
-  // - Base service = typical daytime headways (middle range)
-  // - Off-peak service = longest headways
-  const sorted=[...windows].map((w,i)=>({...w,originalIdx:i})).sort((a,b)=>a.typical-b.typical);
-  const labeled=new Array(windows.length);
-
-  if(sorted.length===1){
-    labeled[sorted[0].originalIdx]={...windows[sorted[0].originalIdx], label:'Base service'};
-  } else if(sorted.length===2){
-    labeled[sorted[0].originalIdx]={...windows[sorted[0].originalIdx], label:'Peak service'};
-    labeled[sorted[1].originalIdx]={...windows[sorted[1].originalIdx], label:'Off-peak service'};
-  } else {
-    // 3+ windows: best = peak, worst = off-peak, middle = base
-    const bestTypical=sorted[0].typical;
-    const worstTypical=sorted[sorted.length-1].typical;
-    for(const w of sorted){
-      let label;
-      if(w.typical===bestTypical) label='Peak service';
-      else if(w.typical===worstTypical) label='Off-peak service';
-      else label='Base service';
-      labeled[w.originalIdx]={...windows[w.originalIdx], label};
-    }
-  }
-  return labeled;
-}
-
-function buildServiceWindowsSection(row, dirDetails, merge){
-  const opts={tolerance:2,minPairs:2};
-  const outboundWindows=labelServiceWindows(deriveServiceWindows(dirDetails?.['0']?.times||[], opts));
-  const inboundWindows=labelServiceWindows(deriveServiceWindows(dirDetails?.['1']?.times||[], opts));
-
-  // Only show section if at least one direction has service windows
-  if(!outboundWindows.length && !inboundWindows.length) return '';
-
-  const outboundHtml = buildServiceWindowTable('Outbound', outboundWindows);
-  const inboundHtml = buildServiceWindowTable('Inbound', inboundWindows);
-  return `
-    <div class="serviceWindows">
-      <h4>Service Periods</h4>
-      <div class="sideBySide">${outboundHtml}${inboundHtml}</div>
-    </div>`;
-}
-
 // Compact departure format: group by hour with HH | MM format
 function buildCompactDepartures(times){
   if(!times || !times.length) return '<div class="muted">No departures</div>';
@@ -2338,9 +2193,6 @@ function renderModalContent(){
   // Build departure times section
   const departuresSection = buildCompactDeparturesSection(dirDetails, false);
 
-  // Build service windows section
-  const serviceWindowsSection = buildServiceWindowsSection(r, dirDetails, true);
-
   // Build validation panel
   const feedValidity = FEED_INFO?.validFrom && FEED_INFO?.validTo
     ? `${formatGtfsDate(FEED_INFO.validFrom)} to ${formatGtfsDate(FEED_INFO.validTo)}`
@@ -2426,7 +2278,6 @@ function renderModalContent(){
           <h4>Departure Times</h4>
           ${departuresSection}
         </div>
-        ${serviceWindowsSection}
       </div>
       <div class="modalSidebar">
         ${validationPanelHtml}
