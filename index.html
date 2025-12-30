@@ -116,6 +116,7 @@
   .dialogTab.active{color:var(--accent);border-bottom-color:var(--accent)}
   .dialogTab:hover{color:var(--text)}
   .dialogBody{flex:1; overflow-y:auto; overflow-x:hidden; max-height:calc(80vh - 60px); padding-right:8px}
+  .dialog label{text-transform:none}
   .tabContent{display:none}
   .tabContent.active{display:block}
   .close{background:transparent; border:1px solid var(--line); color:var(--chipText); border-radius:8px; padding:6px 10px; cursor:pointer}
@@ -735,8 +736,8 @@
           <label for="gtfs" class="btn btnUpload">Upload GTFS</label>
           <input id="gtfs" type="file" accept=".zip" style="display:none">
         </div>
-        <button id="go" class="btn btnAction" type="button" disabled>Analyze</button>
         <button id="exportBtn" class="btn btnAction" style="display:none" onclick="exportResults()">Export</button>
+        <button id="timeSettingsBtn" class="btn btnTheme" type="button" title="Time filter settings" onclick="openTimeSettings()">⚙️</button>
         <button id="theme" class="btn btnTheme" type="button" title="Toggle theme">🌙</button>
       </div>
     </header>
@@ -817,14 +818,13 @@
       </div>
       <div class="filterBar">
         <div class="filterMessage">
-          Showing all routes for <strong id="sortDayLabel">Weekday</strong> <span id="timeRangeLabel"></span>. Click a frequency box above to filter.
+          Showing all routes for <strong id="sortDayLabel">Weekday</strong> <span id="timeRangeLabel"></span>.
         </div>
         <div class="filterBarRight">
           <div class="search">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-opacity=".5" stroke-width="2" d="m21 21-4.35-4.35M10 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z"/></svg>
             <input id="q" placeholder="Filter by route name...">
           </div>
-          <button id="timeSettingsBtn" class="btn btnTheme" type="button" title="Time filter settings" onclick="openTimeSettings()">⚙️</button>
           <span class="routeCount">Displaying <strong>0</strong> routes</span>
         </div>
       </div>
@@ -924,18 +924,15 @@ function detectMode(route_type, routeName){
 }
 
 const fileEl = document.getElementById('gtfs');
-const btn = document.getElementById('go');
 
 // File selection via label click - auto-analyze after upload
 fileEl.addEventListener('change', ()=>{
-  btn.disabled = !(fileEl.files && fileEl.files.length>0);
   document.getElementById('controlsPanel').style.display = fileEl.files?.[0] ? 'block' : 'none';
   // Automatically trigger analysis after file upload
   if(fileEl.files && fileEl.files.length > 0){
     analyze();
   }
 });
-btn.addEventListener('click', analyze);
 
 // Time settings modal functions
 function openTimeSettings(){
