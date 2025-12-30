@@ -231,7 +231,7 @@
   .dayPill{background:var(--panel);border:2px solid var(--line);color:var(--text);padding:12px 18px;border-radius:10px;cursor:pointer;font-weight:700;font-size:13px;transition:all .2s;min-width:90px;text-align:center}
   .dayPill:hover{border-color:var(--accent)}
   .dayPill.active{box-shadow:0 0 0 3px var(--accent)}
-  .filterMessage{margin-top:14px;font-size:13px;color:var(--muted)}
+  .filterMessage{font-size:13px;color:var(--muted);flex-shrink:0}
   .filterMessage strong{color:var(--text);font-weight:700}
   .filterBar{display:flex;align-items:center;justify-content:space-between;margin-top:14px;gap:16px}
   .feedMetaInline{display:flex;gap:16px;font-size:13px;color:var(--muted);flex-wrap:wrap}
@@ -335,8 +335,10 @@
     .dayPills{flex-wrap:wrap}
     .dayPill{flex:1;min-width:80px}
     .filterBar{flex-direction:column;gap:12px;align-items:stretch}
+    .filterBar .filterMessage{text-align:center}
     .filterBar .search{width:100%}
-    .filterBar .routeCount{text-align:right}
+    .filterBarRight{flex-wrap:wrap;justify-content:center}
+    .filterBar .routeCount{text-align:center}
     .combinedRow{flex-direction:column;align-items:flex-start}
     .combinedRow .statLabel{min-width:auto}
   }
@@ -813,10 +815,10 @@
           </button>
         </div>
       </div>
-      <div class="filterMessage">
-        Showing all routes for <strong id="sortDayLabel">Weekday</strong> <span id="timeRangeLabel"></span>. Click a frequency box above to filter.
-      </div>
       <div class="filterBar">
+        <div class="filterMessage">
+          Showing all routes for <strong id="sortDayLabel">Weekday</strong> <span id="timeRangeLabel"></span>. Click a frequency box above to filter.
+        </div>
         <div class="filterBarRight">
           <div class="search">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-opacity=".5" stroke-width="2" d="m21 21-4.35-4.35M10 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z"/></svg>
