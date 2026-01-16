@@ -1488,10 +1488,10 @@ function renderModalContent() {
       <div id="exclusionSection" class="verificationSection" style="display:${validation?.expectedFreq === 'exclude' ? 'block' : 'none'}">
         <label>REASON FOR EXCLUSION</label>
         <div class="btnGroup btnGroupWrap">
-          <button class="verifyBtn ${validation?.exclusionReason === 'too-few-trips' ? 'active' : ''}" data-exclusion="too-few-trips" onclick="selectExclusionReason('too-few-trips')">Too Few Trips</button>
-          <button class="verifyBtn ${validation?.exclusionReason === 'school' ? 'active' : ''}" data-exclusion="school" onclick="selectExclusionReason('school')">School Service</button>
-          <button class="verifyBtn ${validation?.exclusionReason === 'seasonal' ? 'active' : ''}" data-exclusion="seasonal" onclick="selectExclusionReason('seasonal')">Seasonal / Event</button>
-          <button class="verifyBtn ${validation?.exclusionReason === 'demand-response' ? 'active' : ''}" data-exclusion="demand-response" onclick="selectExclusionReason('demand-response')">Demand Response</button>
+          <button class="verifyBtn ${validation?.exclusionReason === 'frequency' ? 'active' : ''}" data-exclusion="frequency" onclick="selectExclusionReason('frequency')">Frequency</button>
+          <button class="verifyBtn ${validation?.exclusionReason === 'span' ? 'active' : ''}" data-exclusion="span" onclick="selectExclusionReason('span')">Span</button>
+          <button class="verifyBtn ${validation?.exclusionReason === 'suspended' ? 'active' : ''}" data-exclusion="suspended" onclick="selectExclusionReason('suspended')">Suspended</button>
+          <button class="verifyBtn ${validation?.exclusionReason === 'inaccessible' ? 'active' : ''}" data-exclusion="inaccessible" onclick="selectExclusionReason('inaccessible')">Inaccessible Schedules</button>
           <button class="verifyBtn ${validation?.exclusionReason === 'other' ? 'active' : ''}" data-exclusion="other" onclick="selectExclusionReason('other')">Other</button>
         </div>
       </div>
