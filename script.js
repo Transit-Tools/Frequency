@@ -1805,14 +1805,7 @@ function buildRouteExports() {
     }
   }
 
-  // Skip if all relevant days are marked as excluded
-  const hasAnyInclusion = ['weekday', 'saturday', 'sunday'].some(d => route[d] && route[d].tier !== 'exclude');
-  if (!hasAnyInclusion && (route.weekday || route.saturday || route.sunday)) continue;
-
-  // Also strip out individual days if they are excluded? 
-  // For now, let's just checking if the whole route is effectively excluded (no tiers).
-  // Actually, user wants to exclude specific runs. If I mark Weekday as Exclude, it should probably be removed or marked.
-  // Let's rely on the tier being set to 'exclude'.
+  // Excluded routes are now INCLUDED in the export, but will have tier: 'exclude' and exclusion_reason set within their validation/day object.
 
   routes.push(route);
 }
