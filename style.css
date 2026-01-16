@@ -1840,14 +1840,59 @@ label.btnUpload {
   gap: 6px
 }
 
-.btnGroupWrap {
+/* Modal layout updates */
+.modalTopRow {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.modalSidebar {
+  display: flex;
+  flex-direction: column;
+}
+
+.modalSidebar .validationPanel {
+  margin: 0;
+  padding: 12px;
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Button grouping updates */
+.btnGroup {
+  display: flex;
+  gap: 6px;
   flex-wrap: wrap;
-  margin-bottom: -4px;
+  /* Fallback */
+}
+
+.btnGroupWrap {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  /* Force 4 columns for frequency buttons */
+  gap: 6px;
+  margin-bottom: 0;
 }
 
 .btnGroupWrap>* {
-  margin-bottom: 4px;
+  margin-bottom: 0;
 }
+
+.btnGroupWrap .verifyBtn {
+  width: 100%;
+}
+
+/* Make Exclude button span full width if it's the last item in a row? 
+   Actually, sticking to a grid is safer. 
+   If we have 7 items (10, 15, 20, 30, 60, Longer, Exclude), 4 columns means:
+   [10] [15] [20] [30]
+   [60] [Long] [Exclude] [Empty]
+   That looks fine.
+*/
 
 .verifyBtn {
   flex: 1 0 auto;
