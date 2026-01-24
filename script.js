@@ -281,7 +281,6 @@ function saveVerification() {
     status,
     notes,
     verifiedAt: new Date().toISOString(),
-    verifiedAt: new Date().toISOString(),
     expectedFreq,
     exclusionReason,
     data_source: dataSource
@@ -1803,14 +1802,13 @@ function buildRouteExports() {
         };
       }
     }
+
+    // Excluded routes are now INCLUDED in the export, but will have tier: 'exclude' and exclusion_reason set within their validation/day object.
+
+    routes.push(route);
   }
 
-  // Excluded routes are now INCLUDED in the export, but will have tier: 'exclude' and exclusion_reason set within their validation/day object.
-
-  routes.push(route);
-}
-
-return routes;
+  return routes;
 }
 
 // Mock Sync Function
