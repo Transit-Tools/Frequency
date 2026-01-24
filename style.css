@@ -529,10 +529,11 @@ th.route {
   border: 1px solid var(--line);
   border-radius: 16px;
   width: min(95vw, 1400px);
-  max-height: 85vh;
+  max-height: 95vh;
   display: flex;
   flex-direction: column;
-  padding: 16px
+  padding: 12px
+    /* Reduced from 16 */
 }
 
 .dialogHeader {
@@ -540,7 +541,8 @@ th.route {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 12px
+  margin-bottom: 8px
+    /* Reduced from 12 */
 }
 
 .dialog h3 {
@@ -584,7 +586,7 @@ th.route {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  max-height: calc(80vh - 60px);
+  max-height: calc(95vh - 60px);
   padding-right: 8px
 }
 
@@ -1469,7 +1471,8 @@ label.btnUpload {
   background: rgba(148, 163, 184, .08);
   border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 16px;
+  padding: 10px;
+  /* Reduced from 16 */
   flex: 1
 }
 
@@ -1478,15 +1481,18 @@ label.btnUpload {
 }
 
 .statCard .label {
-  font-size: 11px;
+  font-size: 10px;
+  /* Reduced from 11 */
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: .05em;
-  margin-bottom: 8px
+  margin-bottom: 6px
+    /* Reduced from 8 */
 }
 
 .statCard .value {
-  font-size: 24px;
+  font-size: 20px;
+  /* Reduced from 24 */
   font-weight: 800
 }
 
@@ -1812,27 +1818,31 @@ label.btnUpload {
 
 /* New verification panel styles */
 .verificationSection {
-  margin-bottom: 16px
+  margin-bottom: 8px;
+  /* Reduced from 10 */
 }
 
 .verificationSection label {
   display: block;
-  font-size: 11px;
+  font-size: 9px;
+  /* Reduced from 10 */
   font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: .05em;
-  margin-bottom: 6px
+  margin-bottom: 4px;
 }
 
 .verificationSection textarea {
   width: 100%;
-  padding: 8px;
+  padding: 6px;
+  /* Reduced from 8 */
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
   color: var(--text);
-  resize: vertical
+  resize: vertical;
+  font-size: 13px;
 }
 
 .btnGroup {
@@ -1844,22 +1854,28 @@ label.btnUpload {
 .modalTopRow {
   display: grid;
   grid-template-columns: 1fr 380px;
-  gap: 16px;
+  gap: 10px;
+  /* Reduced from 16 */
   align-items: stretch;
+  height: 100%;
 }
 
 .modalSidebar {
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
 .modalSidebar .validationPanel {
   margin: 0;
   padding: 12px;
+  /* reduced from 16 */
   width: 100%;
   flex: 1;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+  /* Keep auto but try to avoid it needing to scroll */
 }
 
 /* Button grouping updates */
@@ -1874,7 +1890,8 @@ label.btnUpload {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   /* Force 4 columns for frequency buttons */
-  gap: 6px;
+  gap: 4px;
+  /* Reduced from 6 */
   margin-bottom: 0;
 }
 
@@ -1897,12 +1914,14 @@ label.btnUpload {
 .verifyBtn {
   flex: 1 0 auto;
   min-width: 40px;
-  padding: 8px 12px;
+  padding: 6px 10px;
+  /* Reduced from 8 12 */
   background: var(--panel);
   color: var(--text);
   border: 2px solid var(--line);
   border-radius: 8px;
-  font-size: 12px;
+  font-size: 11px;
+  /* Reduced from 12 */
   font-weight: 700;
   cursor: pointer;
   transition: all .2s;
@@ -2536,4 +2555,151 @@ label.btnUpload {
 .bigUploadBtn:hover {
   transform: scale(1.05);
   box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4);
+}
+
+/* Multi-Select Component */
+.multiSelectContainer {
+  position: relative;
+  width: 100%;
+}
+
+.multiSelectInput {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  /* Reduced from 6 */
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  min-height: 32px;
+  /* Reduced from 38 */
+  cursor: text;
+}
+
+.multiSelectInput:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.multiSelectChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--accent);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dark .chip {
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+}
+
+.chip .removeChip {
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+}
+
+.chip .removeChip:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+}
+
+.searchField {
+  flex: 1;
+  min-width: 60px;
+  border: none;
+  background: transparent;
+  padding: 4px;
+  font-size: 13px;
+  color: var(--text);
+  outline: none;
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--panel);
+  /* Match panel background */
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin-top: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  display: none;
+}
+
+.dark .dropdownMenu {
+  background: #1e293b;
+  /* Ensure contrast in dark mode */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dropdownMenu.show {
+  display: block;
+}
+
+.dropdownOption {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.1s;
+}
+
+.dropdownOption:hover {
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.dropdownOption.selected {
+  background: rgba(59, 130, 246, 0.05);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.dropdownOption.selected:hover {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.dropdownOption input[type="checkbox"] {
+  pointer-events: none;
+  /* Let the row click handle it */
+  width: 14px;
+  height: 14px;
+  accent-color: var(--accent);
+}
+
+.noResults {
+  padding: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+  font-style: italic;
 }

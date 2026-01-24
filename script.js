@@ -232,10 +232,7 @@ function selectSource(source) {
   });
 }
 
-function toggleAttribute(attr) {
-  const btn = document.querySelector(`[data-attr="${attr}"]`);
-  if (btn) btn.classList.toggle('active');
-}
+
 
 function selectStatus(status) {
   document.querySelectorAll('[data-status]').forEach(btn => {
@@ -260,11 +257,7 @@ function selectFrequency(freq) {
   }
 }
 
-function selectExclusionReason(reason) {
-  document.querySelectorAll('[data-exclusion]').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.exclusion === reason);
-  });
-}
+
 
 function saveVerification() {
   const route = currentModalRoute;
@@ -274,9 +267,9 @@ function saveVerification() {
   const sourceBtn = document.querySelector('[data-source].active');
   const dataSource = sourceBtn?.dataset.source || 'gtfs';
 
-  // Get attributes
-  const attributeBtns = document.querySelectorAll('[data-attr].active');
-  const attributes = Array.from(attributeBtns).map(btn => btn.dataset.attr);
+  // Get attributes from multi-select
+  const attributeChips = document.querySelectorAll('#attributes-chips .chip');
+  const attributes = Array.from(attributeChips).map(c => c.dataset.value);
 
   // Get status
   const statusBtn = document.querySelector('[data-status].active');
@@ -290,8 +283,9 @@ function saveVerification() {
     expectedFreq = freqBtn?.dataset.freq || null;
 
     if (expectedFreq === 'exclude') {
-      const exclusionBtn = document.querySelector('[data-exclusion].active');
-      exclusionReason = exclusionBtn?.dataset.exclusion || 'other';
+      const exclusionChips = document.querySelectorAll('#exclusion-chips .chip');
+      const reasons = Array.from(exclusionChips).map(c => c.dataset.value);
+      exclusionReason = reasons.length > 0 ? reasons : ['other'];
     }
   }
 
@@ -1523,14 +1517,11 @@ function renderModalContent() {
         </div>
       </div>
 
-      <div class="verificationSection">
-        <label>ATTRIBUTES</label>
-        <div class="btnGroup btnGroupWrap">
-          <button class="verifyBtn ${attributes.includes('branches') ? 'active' : ''}" data-attr="branches" onclick="toggleAttribute('branches')">Branches</button>
-          <button class="verifyBtn ${attributes.includes('short-turns') ? 'active' : ''}" data-attr="short-turns" onclick="toggleAttribute('short-turns')">Short-Turns</button>
-          <button class="verifyBtn ${attributes.includes('discontinued') ? 'active' : ''}" data-attr="discontinued" onclick="toggleAttribute('discontinued')">Discontinued</button>
-        </div>
-      </div>
+      ${renderMultiSelect('attributes', 'ATTRIBUTES', [
+    { value: 'branches', label: 'Branches' },
+    { value: 'short-turns', label: 'Short-Turns' },
+    { value: 'discontinued', label: 'Discontinued' }
+  ], attributes)}
 
       <div class="verificationSection">
         <label>STATUS</label>
@@ -1555,14 +1546,13 @@ function renderModalContent() {
       </div>
       
       <div id="exclusionSection" class="verificationSection" style="display:${validation?.expectedFreq === 'exclude' ? 'block' : 'none'}">
-        <label>REASON FOR EXCLUSION</label>
-        <div class="btnGroup btnGroupWrap">
-          <button class="verifyBtn ${validation?.exclusionReason === 'frequency' ? 'active' : ''}" data-exclusion="frequency" onclick="selectExclusionReason('frequency')">Frequency</button>
-          <button class="verifyBtn ${validation?.exclusionReason === 'span' ? 'active' : ''}" data-exclusion="span" onclick="selectExclusionReason('span')">Span</button>
-          <button class="verifyBtn ${validation?.exclusionReason === 'suspended' ? 'active' : ''}" data-exclusion="suspended" onclick="selectExclusionReason('suspended')">Suspended</button>
-          <button class="verifyBtn ${validation?.exclusionReason === 'inaccessible' ? 'active' : ''}" data-exclusion="inaccessible" onclick="selectExclusionReason('inaccessible')">Inaccessible Schedules</button>
-          <button class="verifyBtn ${validation?.exclusionReason === 'other' ? 'active' : ''}" data-exclusion="other" onclick="selectExclusionReason('other')">Other</button>
-        </div>
+        ${renderMultiSelect('exclusion', 'REASON FOR EXCLUSION', [
+    { value: 'frequency', label: 'Frequency' },
+    { value: 'span', label: 'Span' },
+    { value: 'suspended', label: 'Suspended' },
+    { value: 'inaccessible', label: 'Inaccessible Schedules' },
+    { value: 'other', label: 'Other' }
+  ], Array.isArray(validation?.exclusionReason) ? validation.exclusionReason : (validation?.exclusionReason ? [validation.exclusionReason] : []))}
       </div>
 
       <div class="verificationSection">
@@ -1873,6 +1863,8 @@ function buildRouteExports() {
       }
     }
 
+
+
     // Excluded routes are now INCLUDED in the export, but will have tier: 'exclude' and exclusion_reason set within their validation/day object.
 
     routes.push(route);
@@ -1907,5 +1899,170 @@ async function syncToAtlas() {
     alert('Successfully synced to Transit Atlas! (Mock Success)\n\nPayload logged to console.');
     document.getElementById('syncBtn').textContent = 'Sync to Atlas';
     document.getElementById('syncBtn').disabled = false;
+  }
+}
+
+// Global click listener to close dropdowns
+document.addEventListener('click', function (e) {
+  if (!e.target.closest('.multiSelectInput')) {
+    document.querySelectorAll('.dropdownMenu.show').forEach(menu => {
+      menu.classList.remove('show');
+    });
+  }
+});
+
+// Multi-Select Helper Functions
+
+function renderMultiSelect(id, label, options, selectedValues, placeholder = 'Search...') {
+  // Store options globally or in a way we can access them for filtering
+  if (!window.MULTI_SELECT_OPTIONS) window.MULTI_SELECT_OPTIONS = {};
+  window.MULTI_SELECT_OPTIONS[id] = options;
+
+  const selectedChips = selectedValues.map(val => {
+    const opt = options.find(o => o.value === val);
+    const labelText = opt ? opt.label : val;
+    return `
+      <div class="chip" data-value="${val}">
+        ${labelText}
+        <span class="removeChip" onclick="removeMultiSelectOption('${id}', '${val}', event)">×</span>
+      </div>
+    `;
+  }).join('');
+
+  const dropdownOptions = options.map(opt => {
+    const isSelected = selectedValues.includes(opt.value);
+    return `
+      <div class="dropdownOption ${isSelected ? 'selected' : ''}" data-val="${opt.value}" onclick="toggleMultiSelectOption('${id}', '${opt.value}')">
+        <input type="checkbox" ${isSelected ? 'checked' : ''}>
+        <span>${opt.label}</span>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="verificationSection" id="${id}-section">
+      <label>${label}</label>
+      <div class="multiSelectContainer" id="${id}-container">
+        <div class="multiSelectInput" onclick="openMultiSelectDropdown('${id}')">
+          <div class="multiSelectChips" id="${id}-chips">
+            ${selectedChips}
+          </div>
+          <input type="text" class="searchField" placeholder="${placeholder}" 
+            oninput="filterMultiSelectOptions('${id}')" 
+            onfocus="openMultiSelectDropdown('${id}')"
+            id="${id}-search"
+            autocomplete="off"
+          >
+        </div>
+        <div class="dropdownMenu" id="${id}-dropdown">
+          <div id="${id}-options">
+            ${dropdownOptions}
+          </div>
+          <div class="noResults" id="${id}-no-results" style="display:none">No matches found</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function openMultiSelectDropdown(id) {
+  // Close others
+  document.querySelectorAll('.dropdownMenu.show').forEach(m => {
+    if (m.id !== `${id}-dropdown`) m.classList.remove('show');
+  });
+
+  const dropdown = document.getElementById(`${id}-dropdown`);
+  if (dropdown) {
+    dropdown.classList.add('show');
+    // document.getElementById(`${id}-search`).focus();
+  }
+}
+
+function toggleMultiSelectOption(id, value) {
+  const chipsContainer = document.getElementById(`${id}-chips`);
+  const optionsContainer = document.getElementById(`${id}-options`);
+  if (!chipsContainer || !optionsContainer) return;
+
+  const options = window.MULTI_SELECT_OPTIONS[id] || [];
+  const optData = options.find(o => o.value === value);
+  const label = optData ? optData.label : value;
+
+  // Check if already selected
+  const existingChip = chipsContainer.querySelector(`.chip[data-value="${value}"]`);
+
+  if (existingChip) {
+    // Remove it
+    existingChip.remove();
+    // Uncheck in dropdown
+    const dropOpt = optionsContainer.querySelector(`.dropdownOption[data-val="${value}"]`);
+    if (dropOpt) {
+      dropOpt.classList.remove('selected');
+      dropOpt.querySelector('input').checked = false;
+    }
+  } else {
+    // Add it
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.dataset.value = value;
+    chip.innerHTML = `
+      ${label}
+      <span class="removeChip" onclick="removeMultiSelectOption('${id}', '${value}', event)">×</span>
+    `;
+    chipsContainer.appendChild(chip);
+
+    // Check in dropdown
+    const dropOpt = optionsContainer.querySelector(`.dropdownOption[data-val="${value}"]`);
+    if (dropOpt) {
+      dropOpt.classList.add('selected');
+      dropOpt.querySelector('input').checked = true;
+    }
+  }
+
+  // Clear search and reset filter
+  const searchInput = document.getElementById(`${id}-search`);
+  if (searchInput) {
+    searchInput.value = '';
+    filterMultiSelectOptions(id);
+    searchInput.focus();
+  }
+}
+
+function removeMultiSelectOption(id, value, event) {
+  if (event) event.stopPropagation();
+
+  const chipsContainer = document.getElementById(`${id}-chips`);
+  const optionsContainer = document.getElementById(`${id}-options`);
+
+  const chip = chipsContainer.querySelector(`.chip[data-value="${value}"]`);
+  if (chip) chip.remove();
+
+  const dropOpt = optionsContainer.querySelector(`.dropdownOption[data-val="${value}"]`);
+  if (dropOpt) {
+    dropOpt.classList.remove('selected');
+    dropOpt.querySelector('input').checked = false;
+  }
+}
+
+function filterMultiSelectOptions(id) {
+  const searchInput = document.getElementById(`${id}-search`);
+  const query = searchInput.value.toLowerCase();
+  const optionsContainer = document.getElementById(`${id}-options`);
+  const noResults = document.getElementById(`${id}-no-results`);
+
+  let matchCount = 0;
+  optionsContainer.querySelectorAll('.dropdownOption').forEach(opt => {
+    const text = opt.innerText.toLowerCase();
+    if (text.includes(query)) {
+      opt.style.display = 'flex';
+      matchCount++;
+    } else {
+      opt.style.display = 'none';
+    }
+  });
+
+  if (matchCount === 0) {
+    noResults.style.display = 'block';
+  } else {
+    noResults.style.display = 'none';
   }
 }
