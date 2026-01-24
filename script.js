@@ -96,8 +96,12 @@ if (document.readyState === 'loading') {
 // theme
 document.getElementById('theme').addEventListener('click', toggleTheme);
 (function initTheme() {
-  const saved = localStorage.getItem('theme') || 'light';
-  if (saved === 'dark') document.body.classList.add('dark');
+  try {
+    const saved = localStorage.getItem('theme') || 'light';
+    if (saved === 'dark') document.body.classList.add('dark');
+  } catch (error) {
+    console.error('Failed to load theme preference:', error);
+  }
   const themeBtn = document.getElementById('theme');
   themeBtn.textContent = document.body.classList.contains('dark') ? '🌙' : '☀️';
 })();
@@ -105,7 +109,11 @@ function toggleTheme() {
   document.body.classList.toggle('dark');
   const themeBtn = document.getElementById('theme');
   themeBtn.textContent = document.body.classList.contains('dark') ? '🌙' : '☀️';
-  localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+  try {
+    localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+  } catch (error) {
+    console.error('Failed to save theme preference:', error);
+  }
 }
 
 // Close modals on Escape key
@@ -118,18 +126,33 @@ document.addEventListener('keydown', (e) => {
 
 // Validation functions
 function loadValidations() {
-  const saved = localStorage.getItem('gtfs-validations');
-  if (saved) VALIDATIONS = JSON.parse(saved);
+  try {
+    const saved = localStorage.getItem('gtfs-validations');
+    if (saved) VALIDATIONS = JSON.parse(saved);
+  } catch (error) {
+    console.error('Failed to load validations from localStorage:', error);
+    VALIDATIONS = {};
+  }
 }
 
 // Route lineage functions
 function loadRouteLineage() {
-  const saved = localStorage.getItem('gtfs-route-lineage');
-  if (saved) ROUTE_LINEAGE = JSON.parse(saved);
+  try {
+    const saved = localStorage.getItem('gtfs-route-lineage');
+    if (saved) ROUTE_LINEAGE = JSON.parse(saved);
+  } catch (error) {
+    console.error('Failed to load route lineage from localStorage:', error);
+    ROUTE_LINEAGE = {};
+  }
 }
 
 function saveRouteLineage() {
-  localStorage.setItem('gtfs-route-lineage', JSON.stringify(ROUTE_LINEAGE));
+  try {
+    localStorage.setItem('gtfs-route-lineage', JSON.stringify(ROUTE_LINEAGE));
+  } catch (error) {
+    console.error('Failed to save route lineage to localStorage:', error);
+    alert('Warning: Failed to save route lineage data. Your changes may not persist.');
+  }
 }
 
 function getRouteLineage(route) {
@@ -292,16 +315,21 @@ function saveVerification() {
   ROUTE_LINEAGE[route].route_changes.changes = attributes;
 
   // Persist to localStorage
-  localStorage.setItem('gtfs-validations', JSON.stringify(VALIDATIONS));
-  saveRouteLineage();
+  try {
+    localStorage.setItem('gtfs-validations', JSON.stringify(VALIDATIONS));
+    saveRouteLineage();
 
-  // Re-render modal to show updated state
-  renderModalContent();
+    // Re-render modal to show updated state
+    renderModalContent();
 
-  // Re-render table to update validation icons
-  render();
+    // Re-render table to update validation icons
+    render();
 
-  alert('Verification saved successfully!');
+    alert('Verification saved successfully!');
+  } catch (error) {
+    console.error('Failed to save verification data:', error);
+    alert('Error: Failed to save verification data. Please check your browser storage settings.');
+  }
 }
 
 // Legacy saveValidation function (kept for compatibility, redirects to new function)
@@ -342,10 +370,15 @@ function saveValidation() {
     };
   }
 
-  localStorage.setItem('gtfs-validations', JSON.stringify(VALIDATIONS));
-  render(); // Refresh table to show new validation status
-  renderModalContent(); // Refresh modal to show updated validation
-  alert('Validation saved!');
+  try {
+    localStorage.setItem('gtfs-validations', JSON.stringify(VALIDATIONS));
+    render(); // Refresh table to show new validation status
+    renderModalContent(); // Refresh modal to show updated validation
+    alert('Validation saved!');
+  } catch (error) {
+    console.error('Failed to save validation data:', error);
+    alert('Error: Failed to save validation data. Please check your browser storage settings.');
+  }
 }
 
 function saveLineage() {
@@ -483,14 +516,40 @@ document.querySelectorAll('.tierBox').forEach(box => {
   });
 });
 
+// Sanitize HTML to prevent XSS attacks
+function escapeHtml(unsafe) {
+  if (unsafe == null) return '';
+  return String(unsafe)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function t2m(s) { const p = (s || '').split(':'); if (p.length < 2) return null; return (+p[0]) * 60 + (+p[1]); }
 function m2t(m) { const h = Math.floor(m / 60); const mm = String(m % 60).padStart(2, '0'); return `${String(h).padStart(2, '0')}:${mm}`; }
 function parseCsv(text) {
-  return new Promise(res => Papa.parse(text, {
-    header: true, skipEmptyLines: true, complete: r => {
-      const clean = r.data.filter(row => Object.values(row).some(v => v && String(v).trim() !== '')); res(clean);
+  return new Promise((resolve, reject) => {
+    try {
+      Papa.parse(text, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          if (results.errors && results.errors.length > 0) {
+            console.warn('CSV parsing warnings:', results.errors);
+          }
+          const clean = results.data.filter(row => Object.values(row).some(v => v && String(v).trim() !== ''));
+          resolve(clean);
+        },
+        error: (error) => {
+          reject(new Error(`CSV parsing failed: ${error.message || error}`));
+        }
+      });
+    } catch (error) {
+      reject(error);
     }
-  }));
+  });
 }
 function bucketCounts(headways) {
   const b = { '≤10': 0, '11–15': 0, '16–20': 0, '21–30': 0, '31–60': 0, '>60': 0 };
@@ -702,9 +761,10 @@ async function analyze() {
     return;
   }
 
-  const zip = await JSZip.loadAsync(file);
-  const need = ['routes.txt', 'trips.txt', 'stop_times.txt', 'calendar.txt'];
-  for (const n of need) { if (!zip.file(n)) { alert(n + ' missing'); return; } }
+  try {
+    const zip = await JSZip.loadAsync(file);
+    const need = ['routes.txt', 'trips.txt', 'stop_times.txt', 'calendar.txt'];
+    for (const n of need) { if (!zip.file(n)) { alert(n + ' missing'); return; } }
 
   const [routes, trips, stopTimes, calendar] = await Promise.all([
     parseCsv(await zip.file('routes.txt').async('text')),
@@ -872,7 +932,7 @@ async function analyze() {
     if (window.IS_HISTORICAL_DATA) {
       historicalBanner.style.display = 'block';
       const validTo = FEED_INFO.validTo ? formatGtfsDate(FEED_INFO.validTo) : 'Unknown';
-      historicalBanner.innerHTML = `<strong>Historical Data:</strong> This GTFS feed expired on ${validTo}. Results reflect past service patterns.`;
+      historicalBanner.innerHTML = `<strong>Historical Data:</strong> This GTFS feed expired on ${escapeHtml(validTo)}. Results reflect past service patterns.`;
     } else {
       historicalBanner.style.display = 'none';
     }
@@ -881,6 +941,16 @@ async function analyze() {
   // Show export and sync buttons
   document.getElementById('exportBtn').style.display = 'inline-block';
   document.getElementById('syncBtn').style.display = 'inline-block';
+  } catch (error) {
+    console.error('Analysis failed:', error);
+    const errorMsg = error.message || 'Unknown error occurred';
+    alert(`Failed to analyze GTFS file: ${errorMsg}\n\nPlease ensure the file is a valid GTFS ZIP archive.`);
+
+    // Reset UI state
+    document.getElementById('tierSummary').style.display = 'none';
+    document.getElementById('tableWrap').style.display = 'none';
+    document.getElementById('feedMetadata').style.display = 'none';
+  }
 }
 
 function cloneDirDetails(details) {
@@ -1003,7 +1073,7 @@ function render(opts = {}) {
     const tr = document.createElement('tr');
     tr.dataset.route = route;
 
-    // Route name cell
+    // Route name cell (using textContent is safe from XSS)
     const routeCell = document.createElement('td');
     routeCell.className = 'route';
     routeCell.textContent = route;
@@ -1296,7 +1366,7 @@ function renderModalContent() {
   // Build modal header with day tabs and content tabs in top bar
   const headerHtml = `
     <div class="modalRouteHeader">
-      <span class="modalRouteBadge">${route}</span>
+      <span class="modalRouteBadge">${escapeHtml(route)}</span>
       <div class="modalDayTabs">
         <button class="modalDayTab ${day === 'Weekday' ? 'active' : ''}" onclick="switchModalDay('Weekday')">Weekday</button>
         <button class="modalDayTab ${day === 'Saturday' ? 'active' : ''}" onclick="switchModalDay('Saturday')">Saturday</button>
@@ -1497,15 +1567,15 @@ function renderModalContent() {
 
       <div class="verificationSection">
         <label>NOTES</label>
-        <textarea id="validationNotes" placeholder="e.g., Checked against Jan 2025 PDF schedule" rows="4">${validation?.notes || ''}</textarea>
+        <textarea id="validationNotes" placeholder="e.g., Checked against Jan 2025 PDF schedule" rows="4">${escapeHtml(validation?.notes || '')}</textarea>
       </div>
 
       <button onclick="saveVerification()" class="btn" style="width:100%">Save</button>
 
       <div class="validationMeta" style="margin-top:12px">
-        <div><strong>Feed validity:</strong> <span id="modalFeedValidity">${feedValidity}</span></div>
-        <div><strong>Analyzed:</strong> <span id="modalAnalyzedAt">${analyzedAt}</span></div>
-        <div><strong>Last verified:</strong> <span id="verifiedAt">${verifiedAt}</span></div>
+        <div><strong>Feed validity:</strong> <span id="modalFeedValidity">${escapeHtml(feedValidity)}</span></div>
+        <div><strong>Analyzed:</strong> <span id="modalAnalyzedAt">${escapeHtml(analyzedAt)}</span></div>
+        <div><strong>Last verified:</strong> <span id="verifiedAt">${escapeHtml(verifiedAt)}</span></div>
         ${window.IS_HISTORICAL_DATA ? '<div style="color:#f59e0b;font-weight:700">This is historical data (feed has expired)</div>' : ''}
       </div>
     </div>
