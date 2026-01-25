@@ -17,7 +17,7 @@ GTFS Frequency is a single-file web application that allows transit researchers 
 - **Instant Export**: Download structured JSON data for use in GIS or longitudinal research.
 
 ### 🧠 Research-Ready
-- **Atlas Integration**: Feeds data into the [Transit Networks Atlas](https://github.com/ryanhanna/FrequentTransitNetworks).
+- **Atlas Integration**: Feeds data into the [Transit Atlas](https://github.com/ryanphanna/Transit-Atlas).
 - **Methodology Focused**: Built on a consistent measurement framework to eliminate agency-specific definitions.
 - **Citation Support**: Standardized formatting for use in academic or advocacy research.
 
@@ -42,7 +42,7 @@ GTFS Frequency is a single-file web application that allows transit researchers 
 
 - **[SECURITY.md](./SECURITY.md)** - Privacy and local-only data model.
 - **[Methodology](https://www.notion.so/lowandhigh/Transit-Networks-ea714af9cebb4430bad9d642dc8afc96)** - Deep dive into classification rules.
-- **[Atlas Repo](https://github.com/ryanhanna/FrequentTransitNetworks)** - Longitudinal database project.
+- **[Transit Atlas](https://github.com/ryanphanna/Transit-Atlas)** - View the longitudinal transit service database.
 
 ---
 
