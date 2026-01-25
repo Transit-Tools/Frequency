@@ -13,18 +13,17 @@
 <body>
   <div class="wrap">
     <header>
-      <h1><strong>GTFS</strong> <span style="font-weight:400">Frequency</span></h1>
+      <h1><a href="index.html" class="headerTitleLink"><strong>GTFS</strong> <span
+            style="font-weight:400">Frequency</span></a></h1>
       <div class="headerActions">
-        <div class="fileBtn">
-          <label for="gtfs" class="btn btnUpload">Upload GTFS</label>
-          <input id="gtfs" type="file" accept=".zip" style="display:none">
-        </div>
         <button id="exportBtn" class="btn btnAction" style="display:none" onclick="exportResults()">Export</button>
+        <button id="theme" class="btn btnTheme" type="button" title="Toggle theme">🌙</button>
         <button id="timeSettingsBtn" class="btn btnTheme" type="button" title="Time filter settings"
           onclick="openTimeSettings()">⚙️</button>
-        <button id="theme" class="btn btnTheme" type="button" title="Toggle theme">🌙</button>
       </div>
     </header>
+    <!-- Hidden input for file upload (triggered by Landing Page button) -->
+    <input id="gtfs" type="file" accept=".zip" style="display:none">
     <section id="landingPage">
       <div class="landingHero">
         <h2>Analyze Transit Frequency in Seconds</h2>

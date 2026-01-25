@@ -92,6 +92,12 @@ h1 {
   letter-spacing: .2px
 }
 
+.headerTitleLink {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
 .panel {
   background: var(--panel);
   border: 1px solid var(--line);

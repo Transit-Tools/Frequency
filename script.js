@@ -934,7 +934,7 @@ async function analyze() {
 
   // Show export and sync buttons
   document.getElementById('exportBtn').style.display = 'inline-block';
-  document.getElementById('syncBtn').style.display = 'inline-block';
+  // document.getElementById('syncBtn').style.display = 'inline-block';
   } catch (error) {
     console.error('Analysis failed:', error);
     const errorMsg = error.message || 'Unknown error occurred';
@@ -1891,8 +1891,13 @@ async function syncToAtlas() {
     console.log(JSON.stringify(payload, null, 2));
 
     // Simulate network delay
-    document.getElementById('syncBtn').textContent = 'Syncing...';
-    document.getElementById('syncBtn').disabled = true;
+    // document.getElementById('syncBtn').textContent = 'Syncing...';
+    // document.getElementById('syncBtn').disabled = true;
+    
+    // ... logic ...
+
+    // document.getElementById('syncBtn').textContent = 'Sync to Atlas';
+    // document.getElementById('syncBtn').disabled = false;
 
     await new Promise(r => setTimeout(r, 1500));
 
