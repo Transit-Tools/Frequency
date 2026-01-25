@@ -1,97 +1,54 @@
-# GTFS Frequency Screener
+# GTFS Frequency
 
 A tool for analyzing transit service quality using GTFS schedule data. Provides standardized, evidence-based route classification for comparative transit research.
 
-## What It Does
+GTFS Frequency is a single-file web application that allows transit researchers and advocates to objectively measure "frequent service" across different agencies.
 
-- Analyzes GTFS schedule data to determine actual service patterns
-- Classifies routes into tiers based on maximum headways
-- Validates results against agency schedules
-- Exports structured data for longitudinal research
+## 🚀 Key Features
 
-## Why This Matters
+### 📊 Service Analysis
+- **Standardized Tiers**: Classifies routes into 6 categories from "Freq+" (≤10 min) to "Sparse" (>60 min).
+- **Maximum Scheduled Gap**: Focuses on the single biggest gap in service, ensuring "frequent" actually means frequent.
+- **Grace Period Tolerance**: Allows for real-world scheduling quirks (+5 min tolerance, max 2 violations).
 
-There's no standardized way to compare transit service across cities. Agencies define "frequent service" differently, making objective analysis impossible. This tool provides a consistent measurement framework for transit researchers and advocates.
+### ⚡ Efficiency Tools
+- **Client-Side Processing**: No servers, no data uploads. Process large GTFS ZIPs entirely in your browser.
+- **Auto-Validation**: Encourages spot-checking against agency PDF schedules for 100% accuracy.
+- **Instant Export**: Download structured JSON data for use in GIS or longitudinal research.
 
-## Live Demo
+### 🧠 Research-Ready
+- **Atlas Integration**: Feeds data into the [Transit Networks Atlas](https://github.com/ryanhanna/FrequentTransitNetworks).
+- **Methodology Focused**: Built on a consistent measurement framework to eliminate agency-specific definitions.
+- **Citation Support**: Standardized formatting for use in academic or advocacy research.
 
-👉 **[Try it here](https://ryanphanna.github.io/GTFS-Screener/)**
+### 🌒 Simple Design
+- **Single-File Architecture**: Entirely self-contained (HTML/JS/CSS).
+- **Static Deployment**: Hosted 100% via GitHub Pages with zero backend dependencies.
 
-## How to Use
+---
 
-1. **Upload GTFS ZIP file** - Download from your transit agency's open data portal
-2. **Set analysis window** - Default is 7am-10pm (typical service hours)
-3. **Click ANALYZE** - Tool processes all routes
-4. **Validate results** - Spot-check against agency PDF schedules
-5. **Export JSON** - Save results with full metadata
+## 🛠️ Getting Started
 
-## Classification Methodology
+1. **Upload GTFS ZIP** - Download from your transit agency's open data portal.
+2. **Set analysis window** - Default is 7am-10pm (typical service hours).
+3. **Click ANALYZE** - Tool processes all routes instantly.
+4. **Validate & Export** - Spot-check results and save the JSON metadata.
 
-Routes are classified by their **maximum scheduled gap** during the analysis window:
+👉 **[Try the Live Demo](https://ryanphanna.github.io/GTFS-Screener/)**
 
-- **Freq+ (≤10 min)** - Very frequent
-- **Freq (≤15 min)** - Frequent
-- **Good (≤20 min)** - Good
-- **Basic (≤30 min)** - Basic service
-- **Infreq (≤60 min)** - Infrequent
-- **Sparse (>60 min)** - Sparse service
+---
 
-**Grace period rules:**
-- +5 minutes tolerance allowed
-- Maximum 2 violations permitted
-- Any gap beyond grace = tier failure
+## 📄 Documentation & Links
 
-Example: A route averaging 10 minutes but with one 25-minute gap **fails** the ≤15 min tier.
+- **[SECURITY.md](./SECURITY.md)** - Privacy and local-only data model.
+- **[Methodology](https://www.notion.so/lowandhigh/Transit-Networks-ea714af9cebb4430bad9d642dc8afc96)** - Deep dive into classification rules.
+- **[Atlas Repo](https://github.com/ryanhanna/FrequentTransitNetworks)** - Longitudinal database project.
 
-Read more: [Methodology documentation](https://www.notion.so/lowandhigh/Transit-Networks-ea714af9cebb4430bad9d642dc8afc96)
+---
 
-## Export Format
+## ⚖️ License
 
-```json
-{
-  "schema_version": "1.0",
-  "check": {
-    "id": "spokane-transit_2025-12-26",
-    "created_at": "2025-12-26T20:00:00Z"
-  },
-  "agency": {...},
-  "gtfs_feed": {
-    "valid_from": "2025-08-03",
-    "valid_to": "2026-01-17"
-  },
-  "routes": [...]
-}
-```
-
-## Part of Frequent Transit Networks
-
-This Screener feeds data into the **[Transit Networks Atlas](https://github.com/ryanhanna/FrequentTransitNetworks)** - a longitudinal database tracking transit service quality across North American cities.
-
-## Technical Details
-
-Single-file HTML application:
-- JSZip for GTFS reading
-- PapaParse for CSV parsing
-- Vanilla JavaScript
-
-## Contributing
-
-- [Report bugs or issues](https://github.com/ryanhanna/GTFS-Screener/issues)
-- Suggest methodology improvements
-- Share your analysis results
-
-## Research Use
-
-Researchers using this tool can cite:
-
-```
-Hanna, R. (2025). GTFS Frequency Screener: Standardized Transit Service
-Quality Analysis Tool. https://github.com/ryanhanna/GTFS-Screener
-```
-
-## License
-
-MIT License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
