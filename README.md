@@ -44,10 +44,4 @@ GTFS Frequency is a single-file web application that allows transit researchers 
 
 ---
 
-## ⚖️ License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
 **Created by Ryan Hanna** | [ryanisnota.pro](https://ryanisnota.pro) | [Project Roadmap](https://www.notion.so/lowandhigh/Transit-Networks-ea714af9cebb4430bad9d642dc8afc96)
