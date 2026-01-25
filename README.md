@@ -34,8 +34,6 @@ GTFS Frequency is a single-file web application that allows transit researchers 
 3. **Click ANALYZE** - Tool processes all routes instantly.
 4. **Validate & Export** - Spot-check results and save the JSON metadata.
 
-👉 **[Try the Live Demo](https://ryanphanna.github.io/GTFS-Screener/)**
-
 ---
 
 ## 📄 Documentation & Links
