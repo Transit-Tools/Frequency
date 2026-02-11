@@ -1,10 +1,10 @@
 # Security Model
 
-This document outlines the security architecture and privacy protections for the GTFS Frequency Screener.
+This document outlines the security architecture and privacy protections for GTFS Frequency.
 
 ## Architecture & Data Privacy
 
-The GTFS Frequency Screener is a **client-side only application**. This architectural choice is the primary security feature.
+GTFS Frequency is a **client-side only application**. This architectural choice is the primary security feature.
 
 ### 1. No Data Uploads
 - All GTFS data processing happens locally in your browser using JavaScript.
