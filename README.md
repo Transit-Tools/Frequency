@@ -1,3 +1,7 @@
+> [!IMPORTANT]
+> **This repository has been merged into [Atlas](https://github.com/Civic-Minds/Atlas).**
+> All future development and maintenance will take place in the Atlas repository. This repository is now archived for historical purposes.
+
 # GTFS Frequency
 
 A tool for analyzing transit service quality using GTFS schedule data. Provides standardized, evidence-based route classification for comparative transit research.
@@ -33,15 +37,3 @@ GTFS Frequency is a single-file web application that allows transit researchers 
 2. **Set analysis window** - Default is 7am-10pm (typical service hours).
 3. **Click ANALYZE** - Tool processes all routes instantly.
 4. **Validate & Export** - Spot-check results and save the JSON metadata.
-
----
-
-## 📄 Documentation & Links
-
-- **[SECURITY.md](./SECURITY.md)** - Privacy and local-only data model.
-- **[Methodology](https://www.notion.so/lowandhigh/Transit-Networks-ea714af9cebb4430bad9d642dc8afc96)** - Deep dive into classification rules.
-- **[Transit Atlas](https://github.com/ryanphanna/Transit-Atlas)** - View the longitudinal transit service database.
-
----
-
-**Created by Ryan Hanna** | [ryanisnota.pro](https://ryanisnota.pro) | [Project Roadmap](https://www.notion.so/lowandhigh/Transit-Networks-ea714af9cebb4430bad9d642dc8afc96)
